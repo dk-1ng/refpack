@@ -1,0 +1,22 @@
+# Dependencies and build output
+node_modules/
+dist/
+
+# Test output
+test-results/
+playwright-report/
+
+# Secrets and local settings
+.env
+.env.*
+
+# The user's library never belongs in this repository
+refpack-library/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Editor and OS files
+.DS_Store
+Thumbs.db

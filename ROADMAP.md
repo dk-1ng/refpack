@@ -1,0 +1,35 @@
+# ROADMAP — refpack
+
+Uma linha por fatia, dizendo o que eu consigo usar e testar ao final. A ordem segue o valor: o pacote existe desde a fatia 0 e cada fatia seguinte o deixa mais rico.
+
+Cada fatia tem tamanho fixo de **1 a 2 dias**. O que não couber sai da fatia e vai para "Depois"; o prazo não estica.
+
+Só a próxima fatia é detalhada (critérios de aceite no `SPEC.md`, tarefas em `docs/slices/`). As outras ficam em uma linha até a vez delas.
+
+| # | Fatia | O que eu consigo fazer ao final | Estado |
+| --- | --- | --- | --- |
+| 0 | Walking skeleton | Abrir o refpack, adicionar uma imagem, vê-la na tela e gerar uma pasta-pacote que o Claude Code lê. | próxima |
+| 1 | Escolher e dizer a intenção | Escolher quais imagens entram no pacote e escrever a intenção do projeto, que sai no pacote. | roteiro |
+| 2 | Nota geral | Escrever uma nota em cada imagem; ela salva sozinha, fica exatamente como escrevi e sai no pacote. | roteiro |
+| 3 | Marcar partes | Marcar áreas de uma imagem com "gosto" ou "não gosto" e um comentário; o pacote traz o recorte de cada marcação. | roteiro |
+| 4 | Etiquetas | Etiquetar imagens e filtrar a grade por etiqueta. | roteiro |
+| 5 | Entrada em volume | Colar, arrastar e importar uma pasta inteira; a grade continua rápida com milhares de imagens. | roteiro |
+| 6 | Sugestões da IA | Pedir ao Claude Code que descreva as imagens novas e revisar cada sugestão: aceitar, corrigir ou rejeitar. | roteiro |
+| 7 | Famílias | Receber famílias estéticas propostas pela IA, aprovar, renomear ou desfazer, e montar um pacote a partir de uma delas. | roteiro |
+| 8 | Retorno | Guardar o resultado que o agente gerou, anotar o que acertou e errou, e promovê-lo a referência. | roteiro |
+
+## Depois
+
+Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só por decisão do dono.
+
+- Links de página com captura da página inteira.
+- Vídeos curtos.
+- Outros destinos do pacote: chat, geradores de interface, geradores de imagem.
+- "Proibições" e "descrição da estética" como itens do pacote.
+- Montar e gerar o pacote conversando com o Claude Code.
+- IA automática dentro da ferramenta, com chave de API.
+- Importar de Pinterest e de favoritos do navegador.
+- A mesma biblioteca em vários computadores.
+- Escolher a pasta de destino do pacote.
+- Apagar uma imagem da biblioteca.
+- Detecção de imagens repetidas.
