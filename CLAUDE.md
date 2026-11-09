@@ -33,6 +33,7 @@ src/shared/    definições de dados usadas pelos dois lados
 e2e/           testes de ponta a ponta (Playwright)
 docs/adr/      decisões de arquitetura
 docs/slices/   um plano por fatia
+docs/WORKFLOW.md   como a sessão principal conduz uma fatia
 ```
 
 `web` e `server` importam de `shared` e nunca um do outro. Pasta nova de primeiro nível exige ADR (ADR-0005).
@@ -59,7 +60,7 @@ Criados na fatia 0; a partir dela são os únicos comandos de verificação.
 - **Nomes de arquivo gerados pela ferramenta**, nunca vindos de texto do usuário. O servidor só grava dentro da pasta da biblioteca.
 - **Código agrupado por funcionalidade**, não por camada. Teste unitário ao lado do arquivo testado.
 - **Idiomas:** documentos em português; código, nomes, comentários e commits em inglês (ADR-0008).
-- **Commits** no padrão Conventional Commits, pequenos, um assunto cada. Um branch por tarefa; `main` só recebe pull request com CI verde.
+- **Commits** no padrão Conventional Commits, pequenos, um assunto cada. Um branch por fatia (`slice/NN-nome`), com as tarefas como commits nele; `main` só recebe pull request com CI verde.
 - **Sem código para o futuro.** Nada de tabela, campo, pasta, opção ou abstração que a fatia atual não use.
 
 ## Definition of Done
@@ -73,22 +74,25 @@ Vale para toda tarefa, sem exceção. Uma tarefa só está pronta quando **todos
 5. Nenhuma mudança de design, dependência, schema ou estrutura de pastas foi feita sem ADR aprovado.
 6. `SPEC.md` e `ROADMAP.md` foram atualizados se o comportamento mudou.
 7. O diff não contém mídia de terceiros, dado pessoal nem segredo.
-8. A revisão com contexto limpo, contra o `SPEC.md`, terminou aprovada.
+8. A revisão da tarefa terminou aprovada.
 
 Para fechar uma **fatia**, além disso:
 
-9. O dono fez o teste manual e aprovou.
+9. A revisão da fatia inteira, em contexto limpo e contra o `SPEC.md`, terminou aprovada.
+10. O dono fez o teste manual e aprovou.
 
 **Nunca diga que algo está pronto sem os testes passando.** Mostre a saída do comando. Se um teste falhou ou um passo foi pulado, diga isso.
 
 ## Ciclo de uma fatia
 
 1. **Planejar:** o arquiteto escreve `docs/slices/NN-nome/plan.md` com tarefas de uma sessão cada, derivadas dos critérios de aceite. O dono aprova.
-2. **Implementar com testes:** uma tarefa por sessão, em TDD.
+2. **Implementar com testes:** um agente novo por tarefa, em TDD.
 3. **CI:** verde nos três sistemas.
 4. **Revisão com contexto limpo contra o SPEC:** bloqueante, com lista de correções.
 5. **Teste manual do dono.**
 6. **Merge.**
+
+A sessão principal segue `docs/WORKFLOW.md`, que traz o papel de cada modelo, quando escalar e os ajustes sobre o superpowers (ADR-0009). Um agente chamado para uma tarefa não precisa lê-lo: faz a tarefa recebida e, diante de qualquer dúvida de design, para e reporta.
 
 ## Regras do projeto
 

@@ -18,3 +18,4 @@ Regras:
 | [0006](0006-testes-e-ci.md) | Um comando de verificação; CI em Linux, Windows e Mac | Aceito |
 | [0007](0007-seguranca.md) | Servidor só local; ameaças de uma pessoa, um computador | Aceito |
 | [0008](0008-idiomas.md) | Tela em pt-BR e en por dicionários; docs em português, código em inglês | Aceito |
+| [0009](0009-papeis-dos-modelos-e-ciclo-da-fatia.md) | Papel de cada modelo, limites de correção e ciclo da fatia | Aceito |

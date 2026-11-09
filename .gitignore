@@ -2,6 +2,9 @@
 node_modules/
 dist/
 
+# Scratch space of the superpowers plugin (task briefs, reports, ledger)
+.superpowers/
+
 # Test output
 test-results/
 playwright-report/
