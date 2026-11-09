@@ -150,6 +150,11 @@ Eu guardo um screenshot do que o agente fez junto do pacote, anoto o que acertou
 - quando eu digo ao Claude Code "leia a pasta" seguido do caminho copiado,
 - então ele consegue dizer quantas referências há e descrever cada uma.
 
+**CA-0.14 Já está aberto**
+- Dado que o refpack já está rodando,
+- quando eu rodo `pnpm start` de novo,
+- então o terminal avisa, em português e em inglês, que o refpack já está aberto e mostra o endereço; nenhum segundo servidor é iniciado e nada na biblioteca muda.
+
 ### Fora desta fatia, de propósito
 
 - Colar da área de transferência e arrastar para a tela (fatia 1).
