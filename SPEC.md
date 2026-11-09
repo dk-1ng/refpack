@@ -36,23 +36,23 @@ Cada fluxo é escrito como "caminho normal" e "quando dá errado". Um "quando d�
 
 Só o fluxo da fatia em andamento tem critérios de aceite completos. Os outros ficam em poucas frases até a vez deles chegar (ver `ROADMAP.md`).
 
-### F1. Guardar imagens — *parte na fatia 0*
+### F1. Guardar imagens — *fatias 0, 1 e 6*
 
-Eu adiciono imagens à biblioteca e as vejo numa grade. Com o tempo serão milhares.
+Eu adiciono imagens à biblioteca e as vejo numa grade: escolhendo arquivos, colando da área de transferência, arrastando para a tela ou importando uma pasta inteira. Com o tempo serão milhares.
 
-### F2. Anotar — *fatias 2, 3 e 4*
+### F2. Anotar — *fatias 3, 4 e 5*
 
 Em cada imagem eu escrevo uma nota geral, marco partes com "gosto" ou "não gosto" e um comentário, e coloco etiquetas (tipo de tela, componente, aspecto).
 
-### F3. Receber sugestões da IA — *fatia 6*
+### F3. Receber sugestões da IA — *fatia 7*
 
 Eu peço ao Claude Code que descreva as imagens novas. As sugestões aparecem numa fila; nada vale até eu aceitar, corrigir ou rejeitar. Não há chave de API paga: a IA é o Claude Code que eu já uso.
 
-### F4. Organizar em famílias — *fatia 7*
+### F4. Organizar em famílias — *fatia 8*
 
 A IA propõe famílias estéticas com nome. Eu aprovo, renomeio ou desfaço.
 
-### F5. Montar o pacote — *parte na fatia 0, completo nas fatias 1 a 3 e 7*
+### F5. Montar o pacote — *parte na fatia 0, completo nas fatias 2 a 4 e 8*
 
 Eu parto de um grupo pronto, ajusto imagem por imagem e escrevo a intenção do projeto: o que é, para quem, o que a pessoa precisa conseguir fazer.
 
@@ -60,7 +60,7 @@ Eu parto de um grupo pronto, ajusto imagem por imagem e escrevo a intenção do 
 
 Um clique gera uma pasta com as imagens numeradas, minhas anotações e a intenção. Eu aponto o Claude Code para ela.
 
-### F7. Trazer o resultado de volta — *fatia 8*
+### F7. Trazer o resultado de volta — *fatia 9*
 
 Eu guardo um screenshot do que o agente fez junto do pacote, anoto o que acertou e o que errou e, se ficou bom, promovo o resultado a referência.
 
@@ -117,7 +117,7 @@ Eu guardo um screenshot do que o agente fez junto do pacote, anoto o que acertou
   - `refs/` com uma cópia de cada imagem da biblioteca, nomeada `01`, `02`, … com a extensão original, na ordem da grade;
   - `README.md`, em inglês, explicando ao agente o que é o pacote e listando cada referência pelo número e pelo arquivo;
   - `.gitignore` que ignora tudo dentro do pacote, para que ele não seja commitado por engano se for copiado para um projeto.
-- Nesta fatia o pacote leva **todas** as imagens da biblioteca; escolher quais entram é a fatia 1.
+- Nesta fatia o pacote leva **todas** as imagens da biblioteca; escolher quais entram é a fatia 2.
 
 **CA-0.8 Saber onde está o pacote**
 - Dado que um pacote acabou de ser gerado,
@@ -152,10 +152,11 @@ Eu guardo um screenshot do que o agente fez junto do pacote, anoto o que acertou
 
 ### Fora desta fatia, de propósito
 
-- Colar da área de transferência, arrastar para a tela e importar uma pasta inteira (fatia 5).
+- Colar da área de transferência e arrastar para a tela (fatia 1).
+- Importar uma pasta inteira (fatia 6).
 - Detecção de imagens repetidas: o mesmo arquivo adicionado duas vezes aparece duas vezes.
 - Apagar uma imagem, notas, marcações, etiquetas, escolher o que entra no pacote, intenção do projeto.
-- Miniaturas e desempenho com milhares de imagens (fatia 5).
+- Miniaturas e desempenho com milhares de imagens (fatia 6).
 - Escolher onde a biblioteca ou o pacote ficam.
 
 ## 7. Depois

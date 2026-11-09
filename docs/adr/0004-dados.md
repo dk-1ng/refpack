@@ -36,7 +36,7 @@ A tentativa antiga guardava um arquivo de texto (JSON) por referência. Para tor
 
 ## Consequências
 
-- Os dados não são legíveis num editor de texto. O Claude Code não lê o banco: lê os pacotes, e gravará sugestões por uma porta própria, decidida em ADR na fatia 6.
+- Os dados não são legíveis num editor de texto. O Claude Code não lê o banco: lê os pacotes, e gravará sugestões por uma porta própria, decidida em ADR na fatia das sugestões da IA.
 - O esquema do banco é definido pelo arquiteto no plano de cada fatia; o executor não o altera.
 - Usar a mesma biblioteca em dois computadores ao mesmo tempo não é suportado; se virar fatia, pede novo ADR.
-- Miniaturas para a grade com milhares de imagens serão decididas na fatia 5.
+- Miniaturas para a grade com milhares de imagens serão decididas na fatia de entrada em volume.
