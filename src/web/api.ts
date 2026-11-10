@@ -1,4 +1,11 @@
-import { ErrorSchema, type Image, ImageListSchema, ImageSchema } from "../shared/api.ts";
+import {
+  ErrorSchema,
+  type Image,
+  ImageListSchema,
+  ImageSchema,
+  type PackCreated,
+  PackCreatedSchema,
+} from "../shared/api.ts";
 
 export async function fetchImages(): Promise<Image[]> {
   const response = await fetch("/api/images");
@@ -31,6 +38,28 @@ export async function uploadImage(file: File): Promise<UploadResult> {
     if (error.success) {
       const code = error.data.error.code;
       if (code === "unsupported-type" || code === "too-large") return { ok: false, code };
+    }
+    return { ok: false, code: "generic" };
+  } catch {
+    return { ok: false, code: "generic" };
+  }
+}
+
+export type CreatePackResult =
+  | { ok: true; pack: PackCreated }
+  | { ok: false; code: "empty-library" | "generic" };
+
+export async function createPack(): Promise<CreatePackResult> {
+  try {
+    const response = await fetch("/api/packs", { method: "POST" });
+    const body: unknown = await response.json();
+    if (response.ok) {
+      const parsed = PackCreatedSchema.safeParse(body);
+      return parsed.success ? { ok: true, pack: parsed.data } : { ok: false, code: "generic" };
+    }
+    const error = ErrorSchema.safeParse(body);
+    if (error.success && error.data.error.code === "empty-library") {
+      return { ok: false, code: "empty-library" };
     }
     return { ok: false, code: "generic" };
   } catch {

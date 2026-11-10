@@ -4,6 +4,7 @@ import { fetchImages } from "./api.ts";
 import { LANGUAGES, type Language, useI18n } from "./i18n/index.tsx";
 import { AddImages } from "./library/AddImages.tsx";
 import { ImageGrid } from "./library/ImageGrid.tsx";
+import { PackPanel } from "./pack/PackPanel.tsx";
 
 export function App() {
   const { language, setLanguage, t } = useI18n();
@@ -51,6 +52,10 @@ export function App() {
       <AddImages
         onAdded={(image) => setImages((current) => [image, ...(current ?? [])])}
         onRefused={(message) => setRefusals((current) => [...current, message])}
+      />
+      <PackPanel
+        imageCount={images?.length ?? 0}
+        onFailed={(message) => setRefusals((current) => [...current, message])}
       />
       {refusals.length > 0 ? (
         <ul role="alert" className="refusals">

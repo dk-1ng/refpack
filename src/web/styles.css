@@ -53,3 +53,16 @@ header label {
   padding-left: 1.25rem;
   color: #b00020;
 }
+
+.pack-panel {
+  margin: 1rem 0 0;
+}
+
+.pack-hint {
+  margin-left: 0.75rem;
+  color: #555555;
+}
+
+.pack-result code {
+  word-break: break-all;
+}
