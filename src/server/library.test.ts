@@ -52,7 +52,10 @@ test("CA-0.6 images are still there, in the same order, after closing and reopen
 
 test("CA-0.5 a file that is not an accepted image is refused and nothing is stored", () => {
   const library = open(tempLibraryRoot());
-  const result = addImage(library, { bytes: new TextEncoder().encode("hello"), originalName: "a.txt" });
+  const result = addImage(library, {
+    bytes: new TextEncoder().encode("hello"),
+    originalName: "a.txt",
+  });
   expect(result).toEqual({ ok: false, code: "unsupported-type" });
   expect(readdirSync(library.imagesDir)).toEqual([]);
   expect(listImages(library)).toEqual([]);

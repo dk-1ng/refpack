@@ -1,12 +1,14 @@
+import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { createApp, listenLocal } from "./app.ts";
+import { openLibrary, resolveLibraryRoot } from "./library.ts";
 
 const defaultPort = 4747;
 
 const port = Number(process.env.REFPACK_PORT ?? defaultPort);
 const webDir = resolve(import.meta.dirname, "../../dist/web");
 
-const app = createApp({ webDir });
+const app = createApp({ webDir, library: openLibrary(resolveLibraryRoot(process.env, homedir())) });
 const server = await listenLocal(app.fetch, port);
 
 console.log(`refpack: http://${server.address}:${server.port}`);
