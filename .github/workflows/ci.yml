@@ -39,5 +39,5 @@ jobs:
         with:
           node-version-file: .node-version
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps chromium firefox
       - run: pnpm check
