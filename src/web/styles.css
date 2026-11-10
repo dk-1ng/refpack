@@ -19,3 +19,15 @@ h1 {
   margin: 0 0 1.5rem;
   font-size: 1.75rem;
 }
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+header label {
+  display: flex;
+  gap: 0.5rem;
+}
