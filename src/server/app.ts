@@ -8,10 +8,12 @@ import { bodyLimit } from "hono/body-limit";
 import { type ErrorCode, type Image, MAX_IMAGE_BYTES } from "../shared/api.ts";
 import { localOnly } from "./guard.ts";
 import { addImage, findImage, type Library, listImages, type StoredImage } from "./library.ts";
+import { createPack } from "./pack.ts";
 
 export type AppDeps = {
   webDir: string;
   library: Library;
+  now: () => Date;
 };
 
 function errorBody(code: ErrorCode): { error: { code: ErrorCode } } {
@@ -66,6 +68,12 @@ export function createApp(deps: AppDeps): Hono {
     if (image === null) return c.json(errorBody("not-found"), 404);
     const bytes = await readFile(join(library.imagesDir, image.fileName));
     return c.body(new Uint8Array(bytes), 200, { "content-type": image.mimeType });
+  });
+
+  app.post("/api/packs", (c) => {
+    const result = createPack(library, deps.now());
+    if (!result.ok) return c.json(errorBody("empty-library"), 409);
+    return c.json({ path: result.path, count: result.count }, 201);
   });
 
   app.use("*", serveStatic({ root: deps.webDir }));

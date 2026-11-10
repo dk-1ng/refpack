@@ -8,7 +8,11 @@ const defaultPort = 4747;
 const port = Number(process.env.REFPACK_PORT ?? defaultPort);
 const webDir = resolve(import.meta.dirname, "../../dist/web");
 
-const app = createApp({ webDir, library: openLibrary(resolveLibraryRoot(process.env, homedir())) });
+const app = createApp({
+  webDir,
+  library: openLibrary(resolveLibraryRoot(process.env, homedir())),
+  now: () => new Date(),
+});
 const server = await listenLocal(app.fetch, port);
 
 console.log(`refpack: http://${server.address}:${server.port}`);

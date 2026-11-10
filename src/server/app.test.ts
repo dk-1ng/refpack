@@ -1,5 +1,13 @@
+import { existsSync } from "node:fs";
+import { isAbsolute } from "node:path";
 import { afterEach, expect, test } from "vitest";
-import { ImageListSchema, ImageSchema, MAX_IMAGE_BYTES } from "../shared/api.ts";
+import {
+  ErrorSchema,
+  ImageListSchema,
+  ImageSchema,
+  MAX_IMAGE_BYTES,
+  PackCreatedSchema,
+} from "../shared/api.ts";
 import { createApp } from "./app.ts";
 import { closeLibrary, type Library, openLibrary } from "./library.ts";
 import { localRequest, PNG_BYTES, tempLibraryRoot } from "./test-support.ts";
@@ -8,7 +16,7 @@ const libraries: Library[] = [];
 function makeApp() {
   const library = openLibrary(tempLibraryRoot());
   libraries.push(library);
-  return createApp({ webDir: "dist/web", library });
+  return createApp({ webDir: "dist/web", library, now: () => new Date(2026, 10, 9, 14, 5, 9) });
 }
 afterEach(() => {
   for (const library of libraries.splice(0)) closeLibrary(library);
@@ -72,4 +80,23 @@ test("CA-0.11 the API is behind the local-only guard", async () => {
     headers: { host: "evil.example" },
   });
   expect(response.status).toBe(403);
+});
+
+test("CA-0.7 POST /api/packs answers 201 with the absolute path and the count", async () => {
+  const app = makeApp();
+  await upload(app, PNG_BYTES);
+  await upload(app, PNG_BYTES, "b.png");
+  const response = await localRequest(app, "/api/packs", { method: "POST" });
+  expect(response.status).toBe(201);
+  const pack = PackCreatedSchema.parse(await response.json());
+  expect(pack.count).toBe(2);
+  expect(isAbsolute(pack.path)).toBe(true);
+  expect(pack.path.endsWith("pack-20261109-140509")).toBe(true);
+  expect(existsSync(pack.path)).toBe(true);
+});
+
+test("POST /api/packs answers 409 empty-library when there are no images", async () => {
+  const response = await localRequest(makeApp(), "/api/packs", { method: "POST" });
+  expect(response.status).toBe(409);
+  expect(ErrorSchema.parse(await response.json()).error.code).toBe("empty-library");
 });
