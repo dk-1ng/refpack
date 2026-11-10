@@ -1,4 +1,4 @@
-import { type Image, ImageListSchema } from "../shared/api.ts";
+import { ErrorSchema, type Image, ImageListSchema, ImageSchema } from "../shared/api.ts";
 
 export async function fetchImages(): Promise<Image[]> {
   const response = await fetch("/api/images");
@@ -6,4 +6,34 @@ export async function fetchImages(): Promise<Image[]> {
     throw new Error(`GET /api/images failed with status ${response.status}`);
   }
   return ImageListSchema.parse(await response.json()).images;
+}
+
+export type UploadResult =
+  | { ok: true; image: Image }
+  | { ok: false; code: "unsupported-type" | "too-large" | "generic" };
+
+export async function uploadImage(file: File): Promise<UploadResult> {
+  try {
+    const response = await fetch("/api/images", {
+      method: "POST",
+      headers: {
+        "content-type": "application/octet-stream",
+        "x-original-name": encodeURIComponent(file.name),
+      },
+      body: file,
+    });
+    const body: unknown = await response.json();
+    if (response.ok) {
+      const parsed = ImageSchema.safeParse(body);
+      return parsed.success ? { ok: true, image: parsed.data } : { ok: false, code: "generic" };
+    }
+    const error = ErrorSchema.safeParse(body);
+    if (error.success) {
+      const code = error.data.error.code;
+      if (code === "unsupported-type" || code === "too-large") return { ok: false, code };
+    }
+    return { ok: false, code: "generic" };
+  } catch {
+    return { ok: false, code: "generic" };
+  }
 }

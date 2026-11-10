@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
+import type { Image } from "../shared/api.ts";
 import { fetchImages } from "./api.ts";
 import { LANGUAGES, type Language, useI18n } from "./i18n/index.tsx";
+import { AddImages } from "./library/AddImages.tsx";
+import { ImageGrid } from "./library/ImageGrid.tsx";
 
 export function App() {
   const { language, setLanguage, t } = useI18n();
-  const [imageCount, setImageCount] = useState<number | null>(null);
+  const [images, setImages] = useState<Image[] | null>(null);
+  const [refusals, setRefusals] = useState<string[]>([]);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -13,14 +17,14 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     fetchImages().then(
-      (images) => {
+      (loaded) => {
         if (!cancelled) {
-          setImageCount(images.length);
+          setImages((current) => (current === null ? loaded : [...current, ...loaded]));
         }
       },
       () => {
         if (!cancelled) {
-          setImageCount(null);
+          setImages(null);
         }
       },
     );
@@ -44,7 +48,20 @@ export function App() {
           </select>
         </label>
       </header>
-      {imageCount === 0 ? <p>{t("library.empty")}</p> : null}
+      <AddImages
+        onAdded={(image) => setImages((current) => [image, ...(current ?? [])])}
+        onRefused={(message) => setRefusals((current) => [...current, message])}
+      />
+      {refusals.length > 0 ? (
+        <ul role="alert" className="refusals">
+          {refusals.map((message, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: append-only list of messages
+            <li key={index}>{message}</li>
+          ))}
+        </ul>
+      ) : null}
+      {images !== null && images.length === 0 ? <p>{t("library.empty")}</p> : null}
+      {images !== null && images.length > 0 ? <ImageGrid images={images} /> : null}
     </main>
   );
 }
