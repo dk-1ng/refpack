@@ -1,15 +1,25 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Image } from "../shared/api.ts";
 import { fetchImages } from "./api.ts";
 import { LANGUAGES, type Language, type Notice, useI18n } from "./i18n/index.tsx";
 import { AddImages } from "./library/AddImages.tsx";
 import { ImageGrid } from "./library/ImageGrid.tsx";
+import { IncomingFiles } from "./library/IncomingFiles.tsx";
 import { PackPanel } from "./pack/PackPanel.tsx";
 
 export function App() {
   const { language, setLanguage, t } = useI18n();
   const [images, setImages] = useState<Image[] | null>(null);
   const [refusals, setRefusals] = useState<Notice[]>([]);
+
+  const addImage = useCallback(
+    (image: Image) => setImages((current) => [image, ...(current ?? [])]),
+    [],
+  );
+  const refuse = useCallback(
+    (notice: Notice) => setRefusals((current) => [...current, notice]),
+    [],
+  );
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -49,14 +59,9 @@ export function App() {
           </select>
         </label>
       </header>
-      <AddImages
-        onAdded={(image) => setImages((current) => [image, ...(current ?? [])])}
-        onRefused={(notice) => setRefusals((current) => [...current, notice])}
-      />
-      <PackPanel
-        imageCount={images?.length ?? 0}
-        onFailed={(notice) => setRefusals((current) => [...current, notice])}
-      />
+      <AddImages onAdded={addImage} onRefused={refuse} />
+      <IncomingFiles onAdded={addImage} onRefused={refuse} />
+      <PackPanel imageCount={images?.length ?? 0} onFailed={refuse} />
       {refusals.length > 0 ? (
         <ul role="alert" className="refusals">
           {refusals.map((notice, index) => (

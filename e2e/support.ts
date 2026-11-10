@@ -2,7 +2,7 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { test as base, type Page } from "@playwright/test";
+import { test as base, type JSHandle, type Page } from "@playwright/test";
 
 export type RunningApp = {
   url: string;
@@ -138,6 +138,59 @@ export async function makeImageFile(
   const path = join(dir, name);
   await writeFile(path, Buffer.from(base64, "base64"));
   return path;
+}
+
+export type FakeFile = {
+  name: string;
+  content: "image/png" | "image/jpeg" | "image/webp" | "text";
+};
+
+// Builds, inside the page, what a paste or a drop carries.
+async function makeDataTransfer(
+  page: Page,
+  files: FakeFile[],
+  text?: string,
+): Promise<JSHandle<DataTransfer>> {
+  return page.evaluateHandle(
+    async ({ files, text }) => {
+      const data = new DataTransfer();
+      for (const { name, content } of files) {
+        if (content === "text") {
+          data.items.add(new File(["just some text, not an image"], name, { type: "text/plain" }));
+          continue;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = 8;
+        canvas.height = 8;
+        const context = canvas.getContext("2d");
+        if (context === null) throw new Error("no 2d context");
+        context.fillStyle = "#3366cc";
+        context.fillRect(0, 0, 8, 8);
+        context.fillStyle = "#ffcc00";
+        context.fillRect(0, 0, 4, 4);
+        const blob = await new Promise<Blob | null>((resolveBlob) =>
+          canvas.toBlob(resolveBlob, content),
+        );
+        if (blob === null) throw new Error(`cannot export ${content}`);
+        data.items.add(new File([blob], name, { type: content }));
+      }
+      if (text !== undefined) data.setData("text/plain", text);
+      return data;
+    },
+    { files, text },
+  );
+}
+
+// Fires, inside the page, the paste event a browser fires on Ctrl+V.
+export async function paste(page: Page, files: FakeFile[], text?: string): Promise<void> {
+  await page.evaluate(
+    (data) => {
+      const event = new ClipboardEvent("paste", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "clipboardData", { value: data });
+      document.body.dispatchEvent(event);
+    },
+    await makeDataTransfer(page, files, text),
+  );
 }
 
 function waitForReadyLine(child: ChildProcess): Promise<string> {

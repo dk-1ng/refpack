@@ -58,6 +58,7 @@ header label {
   margin: 1rem 0 0;
 }
 
+.add-hint,
 .pack-hint {
   margin-left: 0.75rem;
   color: #555555;
