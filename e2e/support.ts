@@ -193,6 +193,25 @@ export async function paste(page: Page, files: FakeFile[], text?: string): Promi
   );
 }
 
+// Fires, inside the page, the events of a drop on the screen. Works in both browsers.
+export async function drop(page: Page, files: FakeFile[], text?: string): Promise<void> {
+  const dataTransfer = await makeDataTransfer(page, files, text);
+  const target = page.locator("main");
+  await target.dispatchEvent("dragenter", { dataTransfer });
+  await target.dispatchEvent("dragover", { dataTransfer });
+  await target.dispatchEvent("drop", { dataTransfer });
+}
+
+// A real drop of files and folders from disk. Chromium only (ADR-0010).
+export async function dropPaths(page: Page, paths: string[]): Promise<void> {
+  const session = await page.context().newCDPSession(page);
+  const data = { items: [], files: paths, dragOperationsMask: 1 };
+  for (const type of ["dragEnter", "dragOver", "drop"] as const) {
+    await session.send("Input.dispatchDragEvent", { type, x: 200, y: 200, data });
+  }
+  await session.detach();
+}
+
 function waitForReadyLine(child: ChildProcess): Promise<string> {
   return new Promise((resolveUrl, reject) => {
     let stdout = "";
