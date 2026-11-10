@@ -80,6 +80,23 @@ header label {
   color: #b00020;
 }
 
+.intent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 1rem 0 0;
+}
+
+.intent textarea {
+  font: inherit;
+  resize: vertical;
+}
+
+.intent-status {
+  min-height: 1.5em;
+  color: #555555;
+}
+
 .pack-panel {
   margin: 1rem 0 0;
 }

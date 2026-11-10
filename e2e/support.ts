@@ -2,7 +2,7 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { test as base, type JSHandle, type Page } from "@playwright/test";
+import { test as base, type JSHandle, type Locator, type Page } from "@playwright/test";
 
 export type RunningApp = {
   url: string;
@@ -190,6 +190,18 @@ export async function paste(page: Page, files: FakeFile[], text?: string): Promi
       document.body.dispatchEvent(event);
     },
     await makeDataTransfer(page, files, text),
+  );
+}
+
+// Fires the paste event on one element, as when the cursor is inside it.
+export async function pasteInto(target: Locator, files: FakeFile[], text?: string): Promise<void> {
+  await target.evaluate(
+    (element, data) => {
+      const event = new ClipboardEvent("paste", { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "clipboardData", { value: data });
+      element.dispatchEvent(event);
+    },
+    await makeDataTransfer(target.page(), files, text),
   );
 }
 

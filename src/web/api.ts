@@ -3,6 +3,7 @@ import {
   type Image,
   ImageListSchema,
   ImageSchema,
+  IntentSchema,
   type PackCreated,
   PackCreatedSchema,
 } from "../shared/api.ts";
@@ -86,4 +87,25 @@ export function setImageSelected(id: string, selected: boolean): Promise<boolean
 
 export function setAllSelected(selected: boolean): Promise<boolean> {
   return putSelected("/api/draft/selection", selected);
+}
+
+export async function fetchIntent(): Promise<string> {
+  const response = await fetch("/api/draft");
+  if (!response.ok) {
+    throw new Error(`GET /api/draft failed with status ${response.status}`);
+  }
+  return IntentSchema.parse(await response.json()).intent;
+}
+
+export async function saveIntent(intent: string): Promise<boolean> {
+  try {
+    const response = await fetch("/api/draft/intent", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ intent }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }

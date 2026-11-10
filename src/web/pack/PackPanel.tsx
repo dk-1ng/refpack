@@ -5,10 +5,12 @@ import { type Notice, useI18n } from "../i18n/index.tsx";
 export function PackPanel({
   imageCount,
   selectedCount,
+  beforeGenerate,
   onFailed,
 }: {
   imageCount: number;
   selectedCount: number;
+  beforeGenerate: () => Promise<boolean>;
   onFailed: (notice: Notice) => void;
 }) {
   const { t } = useI18n();
@@ -16,6 +18,10 @@ export function PackPanel({
   const [copied, setCopied] = useState(false);
 
   async function generate(): Promise<void> {
+    if (!(await beforeGenerate())) {
+      onFailed({ key: "error.notSaved" });
+      return;
+    }
     const result = await createPack();
     if (result.ok) {
       setPath(result.pack.path);

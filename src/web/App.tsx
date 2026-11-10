@@ -6,12 +6,15 @@ import { AddImages } from "./library/AddImages.tsx";
 import { ImageGrid } from "./library/ImageGrid.tsx";
 import { IncomingFiles } from "./library/IncomingFiles.tsx";
 import { SelectionBar } from "./library/SelectionBar.tsx";
+import { IntentBox } from "./pack/IntentBox.tsx";
 import { PackPanel } from "./pack/PackPanel.tsx";
+import { useIntent } from "./pack/use-intent.ts";
 
 export function App() {
   const { language, setLanguage, t } = useI18n();
   const [images, setImages] = useState<Image[] | null>(null);
   const [refusals, setRefusals] = useState<Notice[]>([]);
+  const intent = useIntent();
 
   const addImage = useCallback(
     (image: Image) => setImages((current) => [image, ...(current ?? [])]),
@@ -93,9 +96,11 @@ export function App() {
       </header>
       <AddImages onAdded={addImage} onRefused={refuse} />
       <IncomingFiles onAdded={addImage} onRefused={refuse} />
+      <IntentBox text={intent.text} saveState={intent.saveState} onChange={intent.change} />
       <PackPanel
         imageCount={images?.length ?? 0}
         selectedCount={images?.filter((image) => image.selected).length ?? 0}
+        beforeGenerate={intent.flush}
         onFailed={refuse}
       />
       {refusals.length > 0 ? (

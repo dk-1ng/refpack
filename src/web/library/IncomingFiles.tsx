@@ -23,6 +23,13 @@ export function IncomingFiles({ onAdded, onRefused }: AddHandlers) {
       if (files.length > 0) void addFiles(files, { onAdded, onRefused });
     }
     function onPaste(event: ClipboardEvent): void {
+      // Inside the intent box a paste without files is text for the box (CA-2.12); with files,
+      // the box must not take their names as text.
+      if (event.target instanceof HTMLTextAreaElement) {
+        const { files, folders } = readIncoming(event.clipboardData);
+        if (files.length === 0 && folders.length === 0) return;
+        event.preventDefault();
+      }
       receive(event.clipboardData, "error.nothingToPaste");
     }
     function onDragEnter(event: DragEvent): void {
