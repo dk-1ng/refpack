@@ -88,6 +88,29 @@ export async function startApp(options?: { libraryDir?: string }): Promise<Runni
   return app;
 }
 
+export async function runStart(
+  env: Record<string, string>,
+): Promise<{ code: number | null; stdout: string; stderr: string }> {
+  const child = spawn(process.execPath, ["src/server/main.ts"], {
+    cwd: repoRoot,
+    env: { ...process.env, ...env, REFPACK_NO_OPEN: "1" },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let stdout = "";
+  let stderr = "";
+  child.stdout?.on("data", (chunk: Buffer) => {
+    stdout += chunk.toString("utf8");
+  });
+  child.stderr?.on("data", (chunk: Buffer) => {
+    stderr += chunk.toString("utf8");
+  });
+  const code = await new Promise<number | null>((resolveCode, reject) => {
+    child.once("error", reject);
+    child.once("close", (exitCode) => resolveCode(exitCode));
+  });
+  return { code, stdout, stderr };
+}
+
 export async function makeImageFile(
   page: Page,
   dir: string,
