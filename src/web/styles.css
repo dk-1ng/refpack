@@ -39,6 +39,32 @@ header label {
   margin: 1rem 0 0;
   padding: 0;
   list-style: none;
+  user-select: none;
+}
+
+.image-grid label {
+  display: block;
+  position: relative;
+  cursor: pointer;
+}
+
+.image-grid input {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  margin: 0;
+}
+
+.image-grid input:checked + img {
+  outline: 4px solid #1a56db;
+  outline-offset: -4px;
+}
+
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
 }
 
 .image-grid img {

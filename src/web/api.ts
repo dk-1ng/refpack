@@ -66,3 +66,24 @@ export async function createPack(): Promise<CreatePackResult> {
     return { ok: false, code: "generic" };
   }
 }
+
+async function putSelected(path: string, selected: boolean): Promise<boolean> {
+  try {
+    const response = await fetch(path, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ selected }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export function setImageSelected(id: string, selected: boolean): Promise<boolean> {
+  return putSelected(`/api/images/${encodeURIComponent(id)}/selected`, selected);
+}
+
+export function setAllSelected(selected: boolean): Promise<boolean> {
+  return putSelected("/api/draft/selection", selected);
+}

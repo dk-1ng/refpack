@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Image } from "../shared/api.ts";
-import { fetchImages } from "./api.ts";
+import { fetchImages, setAllSelected, setImageSelected } from "./api.ts";
 import { LANGUAGES, type Language, type Notice, useI18n } from "./i18n/index.tsx";
 import { AddImages } from "./library/AddImages.tsx";
 import { ImageGrid } from "./library/ImageGrid.tsx";
 import { IncomingFiles } from "./library/IncomingFiles.tsx";
+import { SelectionBar } from "./library/SelectionBar.tsx";
 import { PackPanel } from "./pack/PackPanel.tsx";
 
 export function App() {
@@ -19,6 +20,37 @@ export function App() {
   const refuse = useCallback(
     (notice: Notice) => setRefusals((current) => [...current, notice]),
     [],
+  );
+
+  const toggle = useCallback(
+    async (image: Image) => {
+      const saved = await setImageSelected(image.id, !image.selected);
+      if (!saved) {
+        refuse({ key: "error.notSaved" });
+        return;
+      }
+      setImages((current) =>
+        current === null
+          ? current
+          : current.map((item) =>
+              item.id === image.id ? { ...item, selected: !image.selected } : item,
+            ),
+      );
+    },
+    [refuse],
+  );
+  const selectAll = useCallback(
+    async (selected: boolean) => {
+      const saved = await setAllSelected(selected);
+      if (!saved) {
+        refuse({ key: "error.notSaved" });
+        return;
+      }
+      setImages((current) =>
+        current === null ? current : current.map((item) => ({ ...item, selected })),
+      );
+    },
+    [refuse],
   );
 
   useEffect(() => {
@@ -71,7 +103,17 @@ export function App() {
         </ul>
       ) : null}
       {images !== null && images.length === 0 ? <p>{t("library.empty")}</p> : null}
-      {images !== null && images.length > 0 ? <ImageGrid images={images} /> : null}
+      {images !== null && images.length > 0 ? (
+        <>
+          <SelectionBar
+            selected={images.filter((image) => image.selected).length}
+            total={images.length}
+            onSelectAll={() => selectAll(true)}
+            onClear={() => selectAll(false)}
+          />
+          <ImageGrid images={images} onToggle={toggle} />
+        </>
+      ) : null}
     </main>
   );
 }
