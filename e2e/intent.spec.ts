@@ -78,10 +78,24 @@ test("CA-2.4 text typed key by key is saved whole and in order", async ({ page, 
 });
 
 test("CA-2.6 CA-2.7 text typed right before generating is in the pack", async ({ page, app }) => {
+  // The save stays on its way until after the click, so the pack only has the text if
+  // generating waits for it.
+  let release = (): void => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/draft/intent", async (route) => {
+    await held;
+    await route.continue();
+  });
   await page.goto(app.url);
   await selectOneImage(page);
   await intent(page).fill(TEXT);
-  const path = await generate(page);
+  await page.getByRole("button", { name: "Generate pack" }).click();
+  release();
+  const code = page.locator("code");
+  await expect(code).toBeVisible();
+  const path = (await code.textContent()) ?? "";
   expect(await readFile(join(path, "INTENT.md"), "utf8")).toBe(TEXT);
   expect(await readFile(join(path, "README.md"), "utf8")).toContain("Read `INTENT.md`");
 });
