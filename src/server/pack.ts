@@ -25,7 +25,7 @@ export function refNumber(index: number, count: number): string {
 
 export type PackResult =
   | { ok: true; path: string; count: number }
-  | { ok: false; code: "empty-library" };
+  | { ok: false; code: "nothing-selected" };
 
 function createFreshFolder(packsDir: string, baseName: string): string {
   for (let attempt = 1; ; attempt++) {
@@ -42,9 +42,9 @@ function createFreshFolder(packsDir: string, baseName: string): string {
 }
 
 export function createPack(library: Library, now: Date): PackResult {
-  const images = listImages(library);
+  const images = listImages(library).filter((image) => image.selected);
   if (images.length === 0) {
-    return { ok: false, code: "empty-library" };
+    return { ok: false, code: "nothing-selected" };
   }
   mkdirSync(library.packsDir, { recursive: true });
   const path = createFreshFolder(resolve(library.packsDir), packFolderName(now));

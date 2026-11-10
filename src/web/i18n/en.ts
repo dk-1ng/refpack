@@ -10,6 +10,7 @@ export const en: Record<MessageKey, string> = {
   "library.dropHere": "Drop to add",
   "pack.generate": "Generate pack",
   "pack.disabledHint": "Add at least one image to generate a pack.",
+  "pack.selectHint": "Select at least one image to generate a pack.",
   "pack.created": "Pack created at:",
   "pack.copy": "Copy path",
   "pack.copied": "Path copied",

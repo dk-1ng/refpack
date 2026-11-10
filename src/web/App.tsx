@@ -93,7 +93,11 @@ export function App() {
       </header>
       <AddImages onAdded={addImage} onRefused={refuse} />
       <IncomingFiles onAdded={addImage} onRefused={refuse} />
-      <PackPanel imageCount={images?.length ?? 0} onFailed={refuse} />
+      <PackPanel
+        imageCount={images?.length ?? 0}
+        selectedCount={images?.filter((image) => image.selected).length ?? 0}
+        onFailed={refuse}
+      />
       {refusals.length > 0 ? (
         <ul role="alert" className="refusals">
           {refusals.map((notice, index) => (

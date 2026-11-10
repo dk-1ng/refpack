@@ -8,6 +8,7 @@ export const ptBR = {
   "library.dropHere": "Solte para adicionar",
   "pack.generate": "Gerar pacote",
   "pack.disabledHint": "Adicione pelo menos uma imagem para gerar um pacote.",
+  "pack.selectHint": "Selecione pelo menos uma imagem para gerar um pacote.",
   "pack.created": "Pacote gerado em:",
   "pack.copy": "Copiar caminho",
   "pack.copied": "Caminho copiado",

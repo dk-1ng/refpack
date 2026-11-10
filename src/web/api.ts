@@ -47,7 +47,7 @@ export async function uploadImage(file: File): Promise<UploadResult> {
 
 export type CreatePackResult =
   | { ok: true; pack: PackCreated }
-  | { ok: false; code: "empty-library" | "generic" };
+  | { ok: false; code: "nothing-selected" | "generic" };
 
 export async function createPack(): Promise<CreatePackResult> {
   try {
@@ -58,8 +58,8 @@ export async function createPack(): Promise<CreatePackResult> {
       return parsed.success ? { ok: true, pack: parsed.data } : { ok: false, code: "generic" };
     }
     const error = ErrorSchema.safeParse(body);
-    if (error.success && error.data.error.code === "empty-library") {
-      return { ok: false, code: "empty-library" };
+    if (error.success && error.data.error.code === "nothing-selected") {
+      return { ok: false, code: "nothing-selected" };
     }
     return { ok: false, code: "generic" };
   } catch {

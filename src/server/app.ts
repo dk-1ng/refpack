@@ -99,7 +99,7 @@ export function createApp(deps: AppDeps): Hono {
 
   app.post("/api/packs", (c) => {
     const result = createPack(library, deps.now());
-    if (!result.ok) return c.json(errorBody("empty-library"), 409);
+    if (!result.ok) return c.json(errorBody("nothing-selected"), 409);
     return c.json({ path: result.path, count: result.count }, 201);
   });
 

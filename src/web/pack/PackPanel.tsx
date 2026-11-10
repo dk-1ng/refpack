@@ -4,9 +4,11 @@ import { type Notice, useI18n } from "../i18n/index.tsx";
 
 export function PackPanel({
   imageCount,
+  selectedCount,
   onFailed,
 }: {
   imageCount: number;
+  selectedCount: number;
   onFailed: (notice: Notice) => void;
 }) {
   const { t } = useI18n();
@@ -35,10 +37,13 @@ export function PackPanel({
 
   return (
     <section className="pack-panel">
-      <button type="button" disabled={imageCount === 0} onClick={() => void generate()}>
+      <button type="button" disabled={selectedCount === 0} onClick={() => void generate()}>
         {t("pack.generate")}
       </button>
       {imageCount === 0 ? <span className="pack-hint">{t("pack.disabledHint")}</span> : null}
+      {imageCount > 0 && selectedCount === 0 ? (
+        <span className="pack-hint">{t("pack.selectHint")}</span>
+      ) : null}
       {path !== null ? (
         <p className="pack-result">
           {t("pack.created")} <code>{path}</code>{" "}

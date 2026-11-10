@@ -86,6 +86,7 @@ test("CA-0.7 POST /api/packs answers 201 with the absolute path and the count", 
   const app = makeApp();
   await upload(app, PNG_BYTES);
   await upload(app, PNG_BYTES, "b.png");
+  expect((await put(app, "/api/draft/selection", '{"selected":true}')).status).toBe(204);
   const response = await localRequest(app, "/api/packs", { method: "POST" });
   expect(response.status).toBe(201);
   const pack = PackCreatedSchema.parse(await response.json());
@@ -95,10 +96,18 @@ test("CA-0.7 POST /api/packs answers 201 with the absolute path and the count", 
   expect(existsSync(pack.path)).toBe(true);
 });
 
-test("POST /api/packs answers 409 empty-library when there are no images", async () => {
+test("CA-2.8 POST /api/packs answers 409 nothing-selected when there are no images", async () => {
   const response = await localRequest(makeApp(), "/api/packs", { method: "POST" });
   expect(response.status).toBe(409);
-  expect(ErrorSchema.parse(await response.json()).error.code).toBe("empty-library");
+  expect(ErrorSchema.parse(await response.json()).error.code).toBe("nothing-selected");
+});
+
+test("CA-2.8 POST /api/packs answers 409 nothing-selected when no image is selected", async () => {
+  const app = makeApp();
+  await upload(app, PNG_BYTES);
+  const response = await localRequest(app, "/api/packs", { method: "POST" });
+  expect(response.status).toBe(409);
+  expect(ErrorSchema.parse(await response.json()).error.code).toBe("nothing-selected");
 });
 
 const UNKNOWN_ID = "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f";

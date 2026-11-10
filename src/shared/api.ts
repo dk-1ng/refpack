@@ -12,7 +12,7 @@ export const ImageListSchema = z.object({ images: z.array(ImageSchema) });
 export const ErrorCodeSchema = z.enum([
   "unsupported-type",
   "too-large",
-  "empty-library",
+  "nothing-selected",
   "forbidden",
   "not-found",
   "invalid-request",

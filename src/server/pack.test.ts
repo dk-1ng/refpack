@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
+import { setAllSelected, setSelected } from "./draft.ts";
 import { addImage, closeLibrary, type Library, listImages, openLibrary } from "./library.ts";
 import { createPack, packFolderName, refNumber } from "./pack.ts";
 import { JPEG_BYTES, PNG_BYTES, tempLibraryRoot, WEBP_BYTES } from "./test-support.ts";
@@ -36,6 +37,7 @@ test("refNumber pads to two digits, or more when the pack needs it", () => {
 test("CA-0.7 creates the pack folder with numbered refs, README and .gitignore", () => {
   const library = makeLibrary();
   fillLibrary(library);
+  setAllSelected(library, true);
   const result = createPack(library, now);
   expect(result).toEqual({
     ok: true,
@@ -70,6 +72,7 @@ test("CA-0.7 creates the pack folder with numbered refs, README and .gitignore",
 test("CA-0.9 generating twice in the same second creates two different folders", () => {
   const library = makeLibrary();
   fillLibrary(library);
+  setAllSelected(library, true);
   const first = createPack(library, now);
   const second = createPack(library, now);
   expect(first.ok && second.ok).toBe(true);
@@ -80,17 +83,42 @@ test("CA-0.9 generating twice in the same second creates two different folders",
   expect(existsSync(second.path)).toBe(true);
 });
 
-test("CA-0.9 generating a pack leaves the library unchanged", () => {
+test("CA-0.9 CA-2.9 generating a pack leaves the library unchanged", () => {
   const library = makeLibrary();
   fillLibrary(library);
+  setAllSelected(library, true);
   const before = { images: listImages(library), files: readdirSync(library.imagesDir).sort() };
   createPack(library, now);
   expect(listImages(library)).toEqual(before.images);
   expect(readdirSync(library.imagesDir).sort()).toEqual(before.files);
 });
 
-test("an empty library creates nothing and answers empty-library", () => {
+test("an empty library creates nothing and answers nothing-selected", () => {
   const library = makeLibrary();
-  expect(createPack(library, now)).toEqual({ ok: false, code: "empty-library" });
+  expect(createPack(library, now)).toEqual({ ok: false, code: "nothing-selected" });
+  expect(existsSync(library.packsDir)).toBe(false);
+});
+
+test("CA-2.6 only the selected images enter the pack, numbered in grid order", () => {
+  const library = makeLibrary();
+  fillLibrary(library);
+  const byName = new Map(listImages(library).map((image) => [image.originalName, image.id]));
+  setSelected(library, byName.get("a.png") ?? "", true);
+  setSelected(library, byName.get("c.webp") ?? "", true);
+  const result = createPack(library, now);
+  expect(result.ok && result.count).toBe(2);
+  if (!result.ok) return;
+  expect(readdirSync(join(result.path, "refs")).sort()).toEqual(["01.webp", "02.png"]);
+  const readme = readFileSync(join(result.path, "README.md"), "utf8");
+  expect(readme).toContain("- References: 2");
+  expect(readme).toContain("1. `refs/01.webp`");
+  expect(readme).toContain("2. `refs/02.png`");
+  expect(readme).not.toContain("03");
+});
+
+test("CA-2.8 images with none selected create nothing and answer nothing-selected", () => {
+  const library = makeLibrary();
+  fillLibrary(library);
+  expect(createPack(library, now)).toEqual({ ok: false, code: "nothing-selected" });
   expect(existsSync(library.packsDir)).toBe(false);
 });

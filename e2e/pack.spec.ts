@@ -1,9 +1,9 @@
 import { existsSync } from "node:fs";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative } from "node:path";
 import type { Page } from "@playwright/test";
-import { expect, makeImageFile, test } from "./support.ts";
+import { drop, expect, makeImageFile, test } from "./support.ts";
 
 let workDir = "";
 
@@ -24,7 +24,12 @@ async function addTwoImages(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Add images" }).click();
   await (await chooser).setFiles(files);
   await expect(page.getByRole("list").getByRole("img")).toHaveCount(2);
+  await page.getByRole("button", { name: "Select all" }).click();
+  await expect(page.getByText("2 of 2 selected")).toBeVisible();
 }
+
+const a = { name: "a.png", content: "image/png" } as const;
+const b = { name: "b.jpg", content: "image/jpeg" } as const;
 
 async function generate(page: Page): Promise<string> {
   await page.getByRole("button", { name: "Generate pack" }).click();
@@ -93,4 +98,42 @@ test("CA-0.9 the grid is the same after generating", async ({ page, app }) => {
   await page.reload();
   await expect(page.getByRole("list").getByRole("img")).toHaveCount(2);
   expect(await alts()).toEqual(before);
+});
+
+test("CA-2.8 with images and nothing selected the generate button is disabled with an explanation", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await expect(page.getByRole("list").getByRole("img")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Generate pack" })).toBeDisabled();
+  await expect(page.getByText("Select at least one image to generate a pack.")).toBeVisible();
+  await expect(page.getByText("Add at least one image to generate a pack.")).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "a.png" }).click();
+  await expect(page.getByRole("button", { name: "Generate pack" })).toBeEnabled();
+  await expect(page.getByText("Select at least one image to generate a pack.")).toHaveCount(0);
+});
+
+test("CA-2.6 the pack holds only the selected images", async ({ page, app }) => {
+  await page.goto(app.url);
+  await drop(page, [a, b]);
+  await expect(page.getByRole("list").getByRole("img")).toHaveCount(2);
+  await page.getByRole("checkbox", { name: "a.png" }).click();
+  await expect(page.getByRole("checkbox", { name: "a.png" })).toBeChecked();
+  const path = await generate(page);
+  expect(await readdir(join(path, "refs"))).toEqual(["01.png"]);
+  expect(await readFile(join(path, "README.md"), "utf8")).toContain("- References: 1");
+});
+
+test("CA-2.9 the selection is the same after generating", async ({ page, app }) => {
+  await page.goto(app.url);
+  await drop(page, [a, b]);
+  await expect(page.getByRole("list").getByRole("img")).toHaveCount(2);
+  await page.getByRole("checkbox", { name: "a.png" }).click();
+  await expect(page.getByRole("checkbox", { name: "a.png" })).toBeChecked();
+  await generate(page);
+  await expect(page.getByRole("checkbox", { name: "a.png" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "b.jpg" })).not.toBeChecked();
+  await expect(page.getByText("1 of 2 selected")).toBeVisible();
 });
