@@ -37,4 +37,3 @@ Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só 
 - Limpeza técnica: conferir com zod o nome original do arquivo que chega junto com a imagem.
 - Rodar `pnpm start` com o refpack já aberto mostra só o aviso, sem a linha de erro do pnpm depois dele.
 - Avisos que somem sozinhos ou têm botão de fechar. Hoje eles se acumulam até recarregar a página.
-- Ao clicar e arrastar uma imagem da grade, ela fica azul, marcada como texto. Resolver junto com a fatia 2.

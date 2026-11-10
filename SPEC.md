@@ -240,11 +240,116 @@ Colar de verdade (com a ferramenta de captura e o gerenciador de arquivos) e arr
 - Colar ou soltar links de página (lista "Depois").
 - Detecção de imagens repetidas: colar ou soltar a mesma imagem duas vezes a guarda duas vezes.
 
-## 8. Depois
+## 8. Fatia 2 — escolher e dizer a intenção
+
+**O que eu consigo fazer ao final:** selecionar quais imagens entram no pacote e escrever a intenção do projeto; o pacote sai só com as selecionadas e com a intenção.
+
+O que vale para as fatias 0 e 1 continua valendo, com as mudanças listadas em "O que muda nos critérios anteriores". Tudo o que não está listado abaixo fica fora desta fatia.
+
+### Definições desta fatia
+
+- **Seleção:** as imagens que vão entrar no próximo pacote. Começa vazia.
+- **Intenção:** um texto livre, numa caixa só, em que eu digo o que é o projeto, para quem é e o que a pessoa precisa conseguir fazer. É opcional. Tem até 10 000 caracteres; a caixa não aceita mais que isso.
+- **Intenção vazia:** sem nenhum caractere, ou só com espaços e quebras de linha.
+- **Pacote em montagem:** a seleção mais a intenção. Só existe um. Fica guardado até eu mudar: não se perde ao fechar o refpack nem ao gerar o pacote.
+
+### Critérios de aceite
+
+**CA-2.1 Selecionar e tirar da seleção**
+- Dado que a grade tem imagens,
+- quando eu clico numa imagem,
+- então ela ganha um destaque visível de selecionada; clicando de novo, o destaque sai.
+- A tela mostra quantas imagens estão selecionadas e quantas existem (por exemplo, "3 de 12 selecionadas").
+- Clicar e arrastar sobre uma imagem não a deixa azul, como se fosse um texto selecionado.
+
+**CA-2.2 Selecionar todas e limpar a seleção**
+- Dado que a grade tem imagens,
+- quando eu clico em "Selecionar todas", todas ficam selecionadas; quando eu clico em "Limpar seleção", nenhuma fica.
+- A intenção não muda em nenhum dos dois casos.
+
+**CA-2.3 Imagem nova entra sem seleção**
+- Dado que eu já selecionei algumas imagens,
+- quando eu adiciono outra (pelo botão, colando ou soltando),
+- então a nova aparece na grade sem estar selecionada, e a seleção que eu já tinha continua igual.
+
+**CA-2.4 Escrever a intenção**
+- Dado que a tela está aberta,
+- quando eu escrevo na caixa "Intenção do projeto",
+- então o texto é guardado sozinho, sem botão de salvar, e a tela mostra que foi guardado.
+- A caixa vazia mostra uma dica, na língua da tela, lembrando os três pontos: o que é, para quem e o que a pessoa precisa conseguir fazer.
+- O texto fica exatamente como eu digitei: acentos, emojis, quebras de linha e espaços.
+
+**CA-2.5 Fechar e voltar**
+- Dado que eu selecionei imagens e escrevi a intenção,
+- quando eu fecho o refpack e abro de novo,
+- então as mesmas imagens estão selecionadas e a caixa traz o mesmo texto.
+
+**CA-2.6 Gerar com a seleção**
+- Dado que há pelo menos uma imagem selecionada,
+- quando eu clico em "Gerar pacote",
+- então o pacote é criado como no CA-0.7, mas `refs/` e o `README.md` trazem só as imagens selecionadas, numeradas `01`, `02`, … na ordem em que aparecem na grade.
+- O que eu acabei de digitar na intenção entra no pacote, mesmo que eu clique em "Gerar pacote" logo em seguida.
+
+**CA-2.7 A intenção sai no pacote**
+- Dado que a intenção não está vazia,
+- quando o pacote é gerado,
+- então ele traz o arquivo `INTENT.md` com o meu texto, exatamente como digitei e sem nada acrescentado; o `README.md` diz ao agente, em inglês, para ler esse arquivo antes de olhar as referências, e avisa que o texto é do dono e pode estar em outra língua.
+- Com a intenção vazia, o pacote não tem `INTENT.md` e o `README.md` não fala dele.
+- No teste manual do dono, o Claude Code, ao ler a pasta, consegue dizer qual é a intenção e quantas referências há.
+
+**CA-2.8 Nada selecionado**
+- Dado que a biblioteca tem imagens mas nenhuma está selecionada,
+- quando eu olho o botão "Gerar pacote",
+- então ele está desativado, com uma explicação de que é preciso selecionar pelo menos uma imagem.
+
+**CA-2.9 Gerar não altera o pacote em montagem**
+- Dado que eu gerei um pacote,
+- quando a geração termina,
+- então a seleção e a intenção continuam como estavam, para eu ajustar e gerar de novo; gerar de novo cria outra pasta.
+
+**CA-2.10 Começar outro pacote**
+- Dado que há imagens selecionadas ou texto na intenção,
+- quando eu clico em "Começar outro pacote" e confirmo,
+- então a seleção e a caixa da intenção ficam vazias; as imagens da biblioteca e os pacotes já gerados não mudam.
+- Antes de limpar, a tela pede confirmação, porque o texto da intenção é apagado. Se eu cancelo, nada muda.
+
+**CA-2.11 A tela ficou aberta com o refpack parado**
+- Dado que eu parei o refpack no terminal e a tela continuou aberta no navegador,
+- quando eu clico numa imagem ou escrevo na intenção,
+- então a tela avisa, na língua da tela, que não conseguiu guardar; a imagem clicada não aparece como selecionada; o texto que eu digitei continua na caixa, sem a indicação de guardado, para eu poder copiá-lo.
+
+**CA-2.12 Colar com o cursor na caixa da intenção**
+- Dado que o cursor está na caixa da intenção,
+- quando eu colo um texto, ele entra na caixa, como em qualquer campo de texto, e nenhum aviso aparece;
+- quando eu colo uma imagem ou arquivos, eles entram na biblioteca como pelo botão (CA-1.2 e CA-1.3) e o texto da caixa não muda.
+
+### O que muda nos critérios anteriores
+
+- **CA-1.4:** o aviso de "não havia imagem para colar" não aparece quando o cursor está na caixa da intenção; ali vale o CA-2.12.
+- **CA-0.2:** com a biblioteca vazia, o botão "Gerar pacote" continua desativado com a explicação de hoje. Com imagens e nenhuma selecionada, vale o CA-2.8.
+- **CA-0.7:** o pacote deixa de levar todas as imagens. Leva as selecionadas (CA-2.6) e, se houver, a intenção (CA-2.7).
+- **CA-0.9:** gerar também não altera a seleção nem a intenção (CA-2.9).
+
+### Como estes critérios são conferidos
+
+Os testes automáticos rodam no Chromium e no Firefox (ADR-0010). O teste manual do dono é feito no Firefox e termina pedindo ao Claude Code que leia o pacote gerado.
+
+### Fora desta fatia, de propósito
+
+- Vários pacotes em montagem ao mesmo tempo, ou pacote com nome: só existe um.
+- Mudar a ordem das imagens no pacote: ela segue a ordem da grade.
+- Selecionar várias de uma vez com Shift ou arrastando: é uma imagem por clique, ou todas.
+- Mostrar só as selecionadas ou filtrar a grade (etiquetas são a fatia 5).
+- Partir de um grupo pronto (famílias, fatia 8).
+- Lista dos pacotes já gerados, reabrir ou alterar um pacote gerado.
+- Desfazer o "Começar outro pacote".
+- Nota em cada imagem (fatia 3).
+
+## 9. Depois
 
 O que é parte da visão mas não cabe na fatia atual vai para a lista "Depois", que vive em um lugar só: o `ROADMAP.md`. Nada dessa lista é construído sem antes virar fatia, por decisão do dono.
 
-## 9. Fora do escopo
+## 10. Fora do escopo
 
 - Contas, login, nuvem, vários usuários.
 - Celular.
