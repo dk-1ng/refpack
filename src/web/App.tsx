@@ -56,6 +56,22 @@ export function App() {
     [refuse],
   );
 
+  const startOver = useCallback(async () => {
+    if (!window.confirm(t("pack.confirmStartOver"))) return;
+    const cleared = await setAllSelected(false);
+    if (!cleared) {
+      refuse({ key: "error.notSaved" });
+      return;
+    }
+    setImages((current) =>
+      current === null ? current : current.map((item) => ({ ...item, selected: false })),
+    );
+    intent.change("");
+    if (!(await intent.flush())) {
+      refuse({ key: "error.notSaved" });
+    }
+  }, [t, refuse, intent.change, intent.flush]);
+
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
@@ -100,6 +116,10 @@ export function App() {
       <PackPanel
         imageCount={images?.length ?? 0}
         selectedCount={images?.filter((image) => image.selected).length ?? 0}
+        canStartOver={
+          (images?.some((image) => image.selected) ?? false) || (intent.text ?? "") !== ""
+        }
+        onStartOver={() => void startOver()}
         beforeGenerate={intent.flush}
         onFailed={refuse}
       />

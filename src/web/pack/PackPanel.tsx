@@ -5,11 +5,15 @@ import { type Notice, useI18n } from "../i18n/index.tsx";
 export function PackPanel({
   imageCount,
   selectedCount,
+  canStartOver,
+  onStartOver,
   beforeGenerate,
   onFailed,
 }: {
   imageCount: number;
   selectedCount: number;
+  canStartOver: boolean;
+  onStartOver: () => void;
   beforeGenerate: () => Promise<boolean>;
   onFailed: (notice: Notice) => void;
 }) {
@@ -45,6 +49,9 @@ export function PackPanel({
     <section className="pack-panel">
       <button type="button" disabled={selectedCount === 0} onClick={() => void generate()}>
         {t("pack.generate")}
+      </button>{" "}
+      <button type="button" disabled={!canStartOver} onClick={onStartOver}>
+        {t("pack.startOver")}
       </button>
       {imageCount === 0 ? <span className="pack-hint">{t("pack.disabledHint")}</span> : null}
       {imageCount > 0 && selectedCount === 0 ? (

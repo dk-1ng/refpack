@@ -14,6 +14,8 @@ export const en: Record<MessageKey, string> = {
   "pack.created": "Pack created at:",
   "pack.copy": "Copy path",
   "pack.copied": "Path copied",
+  "pack.startOver": "Start another pack",
+  "pack.confirmStartOver": "This clears the selection and erases the intent text. Continue?",
   "intent.label": "Project intent",
   "intent.placeholder": "What it is, who it is for and what the person needs to be able to do.",
   "intent.saved": "Saved",

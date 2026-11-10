@@ -12,6 +12,9 @@ export const ptBR = {
   "pack.created": "Pacote gerado em:",
   "pack.copy": "Copiar caminho",
   "pack.copied": "Caminho copiado",
+  "pack.startOver": "Começar outro pacote",
+  "pack.confirmStartOver":
+    "Isto tira todas as imagens da seleção e apaga o texto da intenção. Continuar?",
   "intent.label": "Intenção do projeto",
   "intent.placeholder": "O que é, para quem é e o que a pessoa precisa conseguir fazer.",
   "intent.saved": "Salvo",
