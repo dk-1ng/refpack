@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, expect, test } from "vitest";
 import { MAX_IMAGE_BYTES } from "../shared/api.ts";
+import { getIntent } from "./draft.ts";
 import {
   addImage,
   closeLibrary,
@@ -106,7 +107,8 @@ test("CA-0.6 a library created before slice 2 opens with every image unselected"
     .prepare("INSERT INTO images (id, original_name, mime_type) VALUES (?, ?, ?)")
     .run("3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f", "antiga.png", "image/png");
   old.close();
-  expect(listImages(open(root))).toEqual([
+  const library = open(root);
+  expect(listImages(library)).toEqual([
     {
       id: "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f",
       originalName: "antiga.png",
@@ -115,4 +117,5 @@ test("CA-0.6 a library created before slice 2 opens with every image unselected"
       selected: false,
     },
   ]);
+  expect(getIntent(library)).toBe("");
 });

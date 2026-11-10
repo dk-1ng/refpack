@@ -5,7 +5,9 @@ import {
   ErrorSchema,
   ImageListSchema,
   ImageSchema,
+  IntentSchema,
   MAX_IMAGE_BYTES,
+  MAX_INTENT_LENGTH,
   PackCreatedSchema,
 } from "../shared/api.ts";
 import { createApp } from "./app.ts";
@@ -169,6 +171,67 @@ test("CA-0.11 the selection routes are behind the local-only guard", async () =>
     method: "PUT",
     headers: { host: "evil.example", "content-type": "application/json" },
     body: '{"selected":true}',
+  });
+  expect(response.status).toBe(403);
+});
+
+const INTENT = "  # Painel de açaí 🍇\n\n\t* Para quem vende na feira.\n`rápido` & simples  \n";
+
+async function readIntent(app: ReturnType<typeof makeApp>): Promise<string> {
+  const response = await localRequest(app, "/api/draft");
+  expect(response.status).toBe(200);
+  return IntentSchema.parse(await response.json()).intent;
+}
+
+test("CA-2.4 PUT /api/draft/intent stores the text and GET /api/draft returns it unchanged", async () => {
+  const app = makeApp();
+  expect(await readIntent(app)).toBe("");
+  const response = await put(app, "/api/draft/intent", JSON.stringify({ intent: INTENT }));
+  expect(response.status).toBe(204);
+  expect(await readIntent(app)).toBe(INTENT);
+});
+
+test("PUT /api/draft/intent takes 10 000 characters and refuses 10 001", async () => {
+  const app = makeApp();
+  const ok = "x".repeat(MAX_INTENT_LENGTH);
+  expect((await put(app, "/api/draft/intent", JSON.stringify({ intent: ok }))).status).toBe(204);
+  const refused = await put(
+    app,
+    "/api/draft/intent",
+    JSON.stringify({ intent: "x".repeat(MAX_INTENT_LENGTH + 1) }),
+  );
+  expect(refused.status).toBe(400);
+  expect(ErrorSchema.parse(await refused.json()).error.code).toBe("invalid-request");
+  expect(await readIntent(app)).toBe(ok);
+});
+
+test("PUT /api/draft/intent answers 400 invalid-request for a wrong body", async () => {
+  const app = makeApp();
+  for (const body of ["{}", '{"intent":5}', "not json"]) {
+    const response = await put(app, "/api/draft/intent", body);
+    expect(response.status).toBe(400);
+    expect(ErrorSchema.parse(await response.json()).error.code).toBe("invalid-request");
+  }
+  expect(await readIntent(app)).toBe("");
+});
+
+test("PUT /api/draft/intent answers 413 too-large above 128 KiB", async () => {
+  const app = makeApp();
+  const response = await put(app, "/api/draft/intent", "x".repeat(128 * 1024 + 1));
+  expect(response.status).toBe(413);
+  expect(ErrorSchema.parse(await response.json()).error.code).toBe("too-large");
+});
+
+test("CA-0.11 the intent routes are behind the local-only guard", async () => {
+  const app = makeApp();
+  const get = await app.request("http://evil.example/api/draft", {
+    headers: { host: "evil.example" },
+  });
+  expect(get.status).toBe(403);
+  const response = await app.request("http://evil.example/api/draft/intent", {
+    method: "PUT",
+    headers: { host: "evil.example", "content-type": "application/json" },
+    body: '{"intent":"x"}',
   });
   expect(response.status).toBe(403);
 });

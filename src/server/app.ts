@@ -5,11 +5,19 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { type ErrorCode, type Image, MAX_IMAGE_BYTES, SelectedBodySchema } from "../shared/api.ts";
-import { setAllSelected, setSelected } from "./draft.ts";
+import {
+  type ErrorCode,
+  type Image,
+  IntentSchema,
+  MAX_IMAGE_BYTES,
+  SelectedBodySchema,
+} from "../shared/api.ts";
+import { getIntent, setAllSelected, setIntent, setSelected } from "./draft.ts";
 import { localOnly } from "./guard.ts";
 import { addImage, findImage, type Library, listImages, type StoredImage } from "./library.ts";
 import { createPack } from "./pack.ts";
+
+const MAX_INTENT_REQUEST_BYTES = 128 * 1024;
 
 export type AppDeps = {
   webDir: string;
@@ -96,6 +104,28 @@ export function createApp(deps: AppDeps): Hono {
     setAllSelected(library, selected);
     return c.body(null, 204);
   });
+
+  app.get("/api/draft", (c) => c.json({ intent: getIntent(library) }));
+
+  app.put(
+    "/api/draft/intent",
+    bodyLimit({
+      maxSize: MAX_INTENT_REQUEST_BYTES,
+      onError: (c) => c.json(errorBody("too-large"), 413),
+    }),
+    async (c) => {
+      let body: unknown;
+      try {
+        body = await c.req.json();
+      } catch {
+        return c.json(errorBody("invalid-request"), 400);
+      }
+      const parsed = IntentSchema.safeParse(body);
+      if (!parsed.success) return c.json(errorBody("invalid-request"), 400);
+      setIntent(library, parsed.data.intent);
+      return c.body(null, 204);
+    },
+  );
 
   app.post("/api/packs", (c) => {
     const result = createPack(library, deps.now());

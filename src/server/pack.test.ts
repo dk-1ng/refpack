@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
-import { setAllSelected, setSelected } from "./draft.ts";
+import { getIntent, setAllSelected, setIntent, setSelected } from "./draft.ts";
 import { addImage, closeLibrary, type Library, listImages, openLibrary } from "./library.ts";
 import { createPack, packFolderName, refNumber } from "./pack.ts";
 import { JPEG_BYTES, PNG_BYTES, tempLibraryRoot, WEBP_BYTES } from "./test-support.ts";
@@ -121,4 +121,61 @@ test("CA-2.8 images with none selected create nothing and answer nothing-selecte
   fillLibrary(library);
   expect(createPack(library, now)).toEqual({ ok: false, code: "nothing-selected" });
   expect(existsSync(library.packsDir)).toBe(false);
+});
+
+const INTENT = "  # Painel de açaí 🍇\n\n\t* Para quem vende na feira.\n`rápido` & simples  \n";
+const INTENT_LINE =
+  "Read `INTENT.md` before you look at the references. It says what is being built, for whom, and what they need to be able to do. It is in the owner's own words and may be in a language other than English.";
+
+function expectedReadme(withIntent: boolean): string {
+  return [
+    "# Reference pack",
+    "",
+    "This folder is a set of design references exported from refpack.",
+    "Use the images in `refs/` as visual references for the interface you are asked to build.",
+    ...(withIntent ? ["", INTENT_LINE] : []),
+    "",
+    "- Created: 2026-11-09 14:05:09",
+    "- References: 3",
+    "",
+    "## References",
+    "",
+    "1. `refs/01.webp`",
+    "2. `refs/02.jpg`",
+    "3. `refs/03.png`",
+    "",
+  ].join("\n");
+}
+
+test("CA-2.7 a pack with an intent carries INTENT.md with exactly the text, and the README points to it", () => {
+  const library = makeLibrary();
+  fillLibrary(library);
+  setAllSelected(library, true);
+  setIntent(library, INTENT);
+  const result = createPack(library, now);
+  if (!result.ok) throw new Error("expected ok");
+  expect(readFileSync(join(result.path, "INTENT.md"))).toEqual(Buffer.from(INTENT, "utf8"));
+  expect(readFileSync(join(result.path, "README.md"), "utf8")).toBe(expectedReadme(true));
+});
+
+test("CA-2.7 an empty or blank intent leaves no INTENT.md and no mention of it", () => {
+  for (const blank of ["", " \n\t "]) {
+    const library = makeLibrary();
+    fillLibrary(library);
+    setAllSelected(library, true);
+    setIntent(library, blank);
+    const result = createPack(library, now);
+    if (!result.ok) throw new Error("expected ok");
+    expect(existsSync(join(result.path, "INTENT.md"))).toBe(false);
+    expect(readFileSync(join(result.path, "README.md"), "utf8")).toBe(expectedReadme(false));
+  }
+});
+
+test("CA-2.9 generating a pack leaves the intent unchanged", () => {
+  const library = makeLibrary();
+  fillLibrary(library);
+  setAllSelected(library, true);
+  setIntent(library, INTENT);
+  createPack(library, now);
+  expect(getIntent(library)).toBe(INTENT);
 });

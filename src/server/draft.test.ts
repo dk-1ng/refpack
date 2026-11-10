@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "vitest";
-import { setAllSelected, setSelected } from "./draft.ts";
+import { getIntent, setAllSelected, setIntent, setSelected } from "./draft.ts";
 import {
   addImage,
   closeLibrary,
@@ -80,4 +80,21 @@ test("CA-2.5 the selection is still there after closing and reopening the librar
   setSelected(first, b.id, true);
   closeLibrary(first);
   expect(flags(makeLibrary(root))).toEqual([true, false]);
+});
+
+const INTENT = "  # Painel de açaí 🍇\n\n\t* Para quem vende na feira.\n`rápido` & simples  \n";
+
+test("CA-2.4 the intent starts empty and comes back exactly as stored", () => {
+  const library = makeLibrary();
+  expect(getIntent(library)).toBe("");
+  setIntent(library, INTENT);
+  expect(getIntent(library)).toBe(INTENT);
+});
+
+test("CA-2.5 the intent is still there after closing and reopening the library", () => {
+  const root = tempLibraryRoot();
+  const first = makeLibrary(root);
+  setIntent(first, INTENT);
+  closeLibrary(first);
+  expect(getIntent(makeLibrary(root))).toBe(INTENT);
 });
