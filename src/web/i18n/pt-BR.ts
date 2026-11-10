@@ -1,0 +1,15 @@
+export const ptBR = {
+  "language.label": "Língua",
+  "language.pt-BR": "Português",
+  "language.en": "English",
+  "library.empty": "Sua biblioteca está vazia. Adicione a primeira imagem.",
+  "library.add": "Adicionar imagens",
+  "pack.generate": "Gerar pacote",
+  "pack.disabledHint": "Adicione pelo menos uma imagem para gerar um pacote.",
+  "pack.created": "Pacote gerado em:",
+  "pack.copy": "Copiar caminho",
+  "pack.copied": "Caminho copiado",
+  "error.unsupportedType": "{name}: tipo não aceito. Use PNG, JPEG ou WebP.",
+  "error.tooLarge": "{name}: passa de 25 MB.",
+  "error.generic": "Algo deu errado. Tente de novo.",
+} as const;
