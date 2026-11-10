@@ -194,6 +194,7 @@ O que vale para a fatia 0 continua valendo. Tudo o que não está listado abaixo
 - quando eu colo na tela do refpack,
 - então cada arquivo entra como pelo botão, com as mesmas recusas do CA-0.5.
 - Quem entrega os arquivos copiados à tela é o navegador, e isso depende do navegador e do sistema: é conferido no teste manual do dono. Onde o navegador não entrega arquivo nenhum, vale o CA-1.4.
+- No Firefox, o navegador pode entregar só o primeiro dos arquivos copiados; os outros não chegam à tela. Para adicionar vários de uma vez, arraste-os (CA-1.6).
 
 **CA-1.4 Colar sem ter imagem copiada**
 - Dado que o que está copiado não é imagem nem arquivo (por exemplo, um texto),

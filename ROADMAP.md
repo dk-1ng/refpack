@@ -9,8 +9,8 @@ Só a próxima fatia é detalhada (critérios de aceite no `SPEC.md`, tarefas em
 | # | Fatia | O que eu consigo fazer ao final | Estado |
 | --- | --- | --- | --- |
 | 0 | Walking skeleton | Abrir o refpack, adicionar uma imagem, vê-la na tela e gerar uma pasta-pacote que o Claude Code lê. | feita |
-| 1 | Colar e arrastar | Colar um screenshot da área de transferência e arrastar arquivos para a tela; eles entram na biblioteca como os escolhidos pelo botão. | próxima |
-| 2 | Escolher e dizer a intenção | Escolher quais imagens entram no pacote e escrever a intenção do projeto, que sai no pacote. | roteiro |
+| 1 | Colar e arrastar | Colar um screenshot da área de transferência e arrastar arquivos para a tela; eles entram na biblioteca como os escolhidos pelo botão. | feita |
+| 2 | Escolher e dizer a intenção | Escolher quais imagens entram no pacote e escrever a intenção do projeto, que sai no pacote. | próxima |
 | 3 | Nota geral | Escrever uma nota em cada imagem; ela salva sozinha, fica exatamente como escrevi e sai no pacote. | roteiro |
 | 4 | Marcar partes | Marcar áreas de uma imagem com "gosto" ou "não gosto" e um comentário; o pacote traz o recorte de cada marcação. | roteiro |
 | 5 | Etiquetas | Etiquetar imagens e filtrar a grade por etiqueta. | roteiro |
@@ -36,3 +36,5 @@ Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só 
 - Detecção de imagens repetidas.
 - Limpeza técnica: conferir com zod o nome original do arquivo que chega junto com a imagem.
 - Rodar `pnpm start` com o refpack já aberto mostra só o aviso, sem a linha de erro do pnpm depois dele.
+- Avisos que somem sozinhos ou têm botão de fechar. Hoje eles se acumulam até recarregar a página.
+- Ao clicar e arrastar uma imagem da grade, ela fica azul, marcada como texto. Resolver junto com a fatia 2.
