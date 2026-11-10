@@ -114,7 +114,7 @@ Eu guardo um screenshot do que o agente fez junto do pacote, anoto o que acertou
 - Dado que a biblioteca tem pelo menos uma imagem,
 - quando eu clico em "Gerar pacote",
 - então é criada a pasta `packs/pack-AAAAMMDD-HHMMSS/` contendo:
-  - `refs/` com uma cópia de cada imagem da biblioteca, nomeada `01`, `02`, … com a extensão original, na ordem da grade;
+  - `refs/` com uma cópia de cada imagem da biblioteca, nomeada `01`, `02`, … com a extensão do formato da imagem (`.png`, `.jpg` ou `.webp`), na ordem da grade;
   - `README.md`, em inglês, explicando ao agente o que é o pacote e listando cada referência pelo número e pelo arquivo;
   - `.gitignore` que ignora tudo dentro do pacote, para que ele não seja commitado por engano se for copiado para um projeto.
 - Nesta fatia o pacote leva **todas** as imagens da biblioteca; escolher quais entram é a fatia 2.
@@ -164,11 +164,87 @@ Eu guardo um screenshot do que o agente fez junto do pacote, anoto o que acertou
 - Miniaturas e desempenho com milhares de imagens (fatia 6).
 - Escolher onde a biblioteca ou o pacote ficam.
 
-## 7. Depois
+## 7. Fatia 1 — colar e arrastar
+
+**O que eu consigo fazer ao final:** colar um screenshot da área de transferência e arrastar arquivos para a tela; eles entram na biblioteca como os escolhidos pelo botão.
+
+O que vale para a fatia 0 continua valendo. Tudo o que não está listado abaixo fica fora desta fatia.
+
+### Definições desta fatia
+
+- **Colar:** apertar Ctrl+V (Cmd+V no Mac) com a tela do refpack em primeiro plano. Não precisa clicar em nenhum lugar antes.
+- **Soltar:** arrastar algo de fora do navegador e largar em qualquer ponto da tela do refpack.
+- **Entrar como pelo botão:** vale para o que é colado ou solto tudo o que os critérios CA-0.3, CA-0.4 e CA-0.5 dizem para arquivos escolhidos pelo botão "Adicionar imagens": aparece na grade, o mais recente primeiro, sem recarregar a página; o original não é tocado; o que não é imagem aceita é recusado com nome e motivo, e os outros entram normalmente.
+
+### Critérios de aceite
+
+**CA-1.1 Dica na tela**
+- Dado que a tela está aberta,
+- quando eu olho perto do botão "Adicionar imagens",
+- então vejo uma dica curta, na língua da tela, dizendo que também dá para colar com Ctrl+V e arrastar arquivos para a tela.
+
+**CA-1.2 Colar uma imagem copiada**
+- Dado que eu copiei uma imagem (um screenshot recém-tirado, ou "Copiar imagem" num site),
+- quando eu colo na tela do refpack,
+- então a imagem entra como pelo botão.
+- Uma imagem copiada assim não tem nome de arquivo; o refpack guarda o nome que o navegador dá a ela.
+
+**CA-1.3 Colar arquivos copiados**
+- Dado que eu copiei um ou mais arquivos no gerenciador de arquivos,
+- quando eu colo na tela do refpack,
+- então cada arquivo entra como pelo botão, com as mesmas recusas do CA-0.5.
+- Quem entrega os arquivos copiados à tela é o navegador, e isso depende do navegador e do sistema: é conferido no teste manual do dono. Onde o navegador não entrega arquivo nenhum, vale o CA-1.4.
+- No Firefox, o navegador pode entregar só o primeiro dos arquivos copiados; os outros não chegam à tela. Para adicionar vários de uma vez, arraste-os (CA-1.6).
+
+**CA-1.4 Colar sem ter imagem copiada**
+- Dado que o que está copiado não é imagem nem arquivo (por exemplo, um texto),
+- quando eu colo na tela do refpack,
+- então a tela mostra um aviso, na língua da tela, de que não havia imagem para colar; nada é guardado.
+
+**CA-1.5 A tela mostra que vai receber**
+- Dado que a tela está aberta,
+- quando eu arrasto arquivos por cima dela,
+- então a tela inteira ganha um destaque com um convite para soltar, na língua da tela; o destaque some quando eu solto ou quando tiro os arquivos de cima da tela.
+
+**CA-1.6 Soltar arquivos**
+- Dado que eu arrasto um ou mais arquivos do gerenciador de arquivos,
+- quando eu os solto em qualquer ponto da tela,
+- então cada arquivo entra como pelo botão, com as mesmas recusas do CA-0.5.
+
+**CA-1.7 Soltar uma pasta**
+- Dado que eu arrasto uma pasta, sozinha ou junto com arquivos,
+- quando eu solto na tela,
+- então a tela mostra um aviso, na língua da tela, com o nome da pasta e dizendo que pastas ainda não são aceitas; nada de dentro da pasta é guardado; os arquivos soltos junto com ela entram normalmente.
+
+**CA-1.8 Soltar algo que não é arquivo**
+- Dado que eu arrasto algo que não é arquivo nem pasta (por exemplo, um texto selecionado ou um link),
+- quando eu solto na tela,
+- então a tela mostra um aviso, na língua da tela, de que não havia imagem para adicionar; nada é guardado; a tela do refpack continua aberta, sem ser trocada por outra página.
+
+**CA-1.9 Imagem da grade não se duplica**
+- Dado que a grade tem imagens,
+- quando eu arrasto uma imagem da própria grade e solto na tela,
+- então nada é adicionado e nenhum aviso aparece.
+
+### Como estes critérios são conferidos
+
+Os testes automáticos rodam no Chromium e no Firefox (ADR-0010) e simulam, dentro do navegador, o colar e o soltar. Soltar uma pasta (CA-1.7) só pode ser simulado no Chromium.
+
+Colar de verdade (com a ferramenta de captura e o gerenciador de arquivos) e arrastar de verdade são conferidos no teste manual do dono, feito no Firefox.
+
+### Fora desta fatia, de propósito
+
+- Botão "Colar": colar é só pelo teclado.
+- Arrastar uma imagem direto de um site: não é prometido nem testado. Se o navegador entregar só o link, vale o CA-1.8.
+- Importar o conteúdo de uma pasta (fatia 6).
+- Colar ou soltar links de página (lista "Depois").
+- Detecção de imagens repetidas: colar ou soltar a mesma imagem duas vezes a guarda duas vezes.
+
+## 8. Depois
 
 O que é parte da visão mas não cabe na fatia atual vai para a lista "Depois", que vive em um lugar só: o `ROADMAP.md`. Nada dessa lista é construído sem antes virar fatia, por decisão do dono.
 
-## 8. Fora do escopo
+## 9. Fora do escopo
 
 - Contas, login, nuvem, vários usuários.
 - Celular.

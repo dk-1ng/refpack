@@ -15,7 +15,8 @@ Regras:
 | [0003](0003-stack.md) | TypeScript em tudo, Node, React, Hono | Aceito |
 | [0004](0004-dados.md) | Pasta de biblioteca com SQLite e imagens como arquivos | Aceito |
 | [0005](0005-estrutura-de-pastas.md) | Um pacote só; pastas nascem quando uma fatia precisa | Aceito |
-| [0006](0006-testes-e-ci.md) | Um comando de verificação; CI em Linux, Windows e Mac | Aceito |
+| [0006](0006-testes-e-ci.md) | Um comando de verificação; CI em Linux, Windows e Mac | Aceito; "só com Chromium" superado pelo ADR-0010 |
 | [0007](0007-seguranca.md) | Servidor só local; ameaças de uma pessoa, um computador | Aceito |
 | [0008](0008-idiomas.md) | Tela em pt-BR e en por dicionários; docs em português, código em inglês | Aceito |
 | [0009](0009-papeis-dos-modelos-e-ciclo-da-fatia.md) | Papel de cada modelo, limites de correção e ciclo da fatia | Aceito |
+| [0010](0010-testes-tambem-no-firefox.md) | Testes de ponta a ponta no Chromium e no Firefox | Aceito |

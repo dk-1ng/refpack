@@ -58,6 +58,7 @@ header label {
   margin: 1rem 0 0;
 }
 
+.add-hint,
 .pack-hint {
   margin-left: 0.75rem;
   color: #555555;
@@ -65,4 +66,19 @@ header label {
 
 .pack-result code {
   word-break: break-all;
+}
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  border: 4px dashed #555555;
+  font-size: 1.5rem;
+}
+
+.drop-overlay p {
+  pointer-events: none;
 }

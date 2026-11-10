@@ -5,7 +5,7 @@ export function ImageGrid({ images }: { images: Image[] }) {
     <ul className="image-grid">
       {images.map((image) => (
         <li key={image.id}>
-          <img src={image.url} alt={image.originalName} />
+          <img src={image.url} alt={image.originalName} draggable={false} />
         </li>
       ))}
     </ul>

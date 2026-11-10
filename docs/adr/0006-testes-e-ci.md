@@ -1,6 +1,6 @@
 # ADR-0006: Testes e CI
 
-- **Estado:** Aceito
+- **Estado:** Aceito. No item 2, o trecho "só com Chromium" foi superado pelo ADR-0010.
 - **Data:** 2026-11-09
 
 ## Contexto

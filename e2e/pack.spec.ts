@@ -62,8 +62,15 @@ test("CA-0.7 CA-0.8 generating shows the full path of a folder that holds the pa
   expect(refs.some((name) => name.startsWith("02."))).toBe(true);
 });
 
-test("CA-0.8 the copy button puts the path on the clipboard", async ({ page, app, context }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+test("CA-0.8 the copy button puts the path on the clipboard", async ({
+  page,
+  app,
+  context,
+  browserName,
+}) => {
+  if (browserName === "chromium") {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  }
   await page.goto(app.url);
   await addTwoImages(page);
   const path = await generate(page);

@@ -6,6 +6,8 @@ export const en: Record<MessageKey, string> = {
   "language.en": "English",
   "library.empty": "Your library is empty. Add your first image.",
   "library.add": "Add images",
+  "library.hint": "You can also paste with Ctrl+V or drag files onto this screen.",
+  "library.dropHere": "Drop to add",
   "pack.generate": "Generate pack",
   "pack.disabledHint": "Add at least one image to generate a pack.",
   "pack.created": "Pack created at:",
@@ -14,4 +16,7 @@ export const en: Record<MessageKey, string> = {
   "error.unsupportedType": "{name}: unsupported type. Use PNG, JPEG or WebP.",
   "error.tooLarge": "{name}: larger than 25 MB.",
   "error.generic": "Something went wrong. Try again.",
+  "error.nothingToPaste": "There was no image to paste.",
+  "error.nothingToAdd": "There was no image to add.",
+  "error.folder": "{name}: folders are not accepted yet.",
 };

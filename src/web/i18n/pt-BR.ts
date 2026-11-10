@@ -4,6 +4,8 @@ export const ptBR = {
   "language.en": "English",
   "library.empty": "Sua biblioteca está vazia. Adicione a primeira imagem.",
   "library.add": "Adicionar imagens",
+  "library.hint": "Você também pode colar com Ctrl+V ou arrastar arquivos para esta tela.",
+  "library.dropHere": "Solte para adicionar",
   "pack.generate": "Gerar pacote",
   "pack.disabledHint": "Adicione pelo menos uma imagem para gerar um pacote.",
   "pack.created": "Pacote gerado em:",
@@ -12,4 +14,7 @@ export const ptBR = {
   "error.unsupportedType": "{name}: tipo não aceito. Use PNG, JPEG ou WebP.",
   "error.tooLarge": "{name}: passa de 25 MB.",
   "error.generic": "Algo deu errado. Tente de novo.",
+  "error.nothingToPaste": "Não havia imagem para colar.",
+  "error.nothingToAdd": "Não havia imagem para adicionar.",
+  "error.folder": "{name}: pastas ainda não são aceitas.",
 } as const;
