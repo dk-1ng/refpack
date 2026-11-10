@@ -32,6 +32,13 @@ header label {
   gap: 0.5rem;
 }
 
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+}
+
 .image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
@@ -55,23 +62,16 @@ header label {
   margin: 0;
 }
 
-.image-grid input:checked + img {
-  outline: 4px solid #1a56db;
-  outline-offset: -4px;
-}
-
-.selection-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 1rem 0 0;
-}
-
 .image-grid img {
   display: block;
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
+}
+
+.image-grid input:checked + img {
+  outline: 4px solid #1a56db;
+  outline-offset: -4px;
 }
 
 .refusals {
