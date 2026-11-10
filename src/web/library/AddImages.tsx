@@ -2,14 +2,14 @@ import { useRef } from "react";
 import type { Image } from "../../shared/api.ts";
 import { MAX_IMAGE_BYTES } from "../../shared/api.ts";
 import { uploadImage } from "../api.ts";
-import { useI18n } from "../i18n/index.tsx";
+import { type Notice, useI18n } from "../i18n/index.tsx";
 
 export function AddImages({
   onAdded,
   onRefused,
 }: {
   onAdded: (image: Image) => void;
-  onRefused: (message: string) => void;
+  onRefused: (notice: Notice) => void;
 }) {
   const { t } = useI18n();
   const input = useRef<HTMLInputElement>(null);
@@ -23,11 +23,11 @@ export function AddImages({
       if (result.ok) {
         onAdded(result.image);
       } else if (result.code === "unsupported-type") {
-        onRefused(t("error.unsupportedType", { name: file.name }));
+        onRefused({ key: "error.unsupportedType", vars: { name: file.name } });
       } else if (result.code === "too-large") {
-        onRefused(t("error.tooLarge", { name: file.name }));
+        onRefused({ key: "error.tooLarge", vars: { name: file.name } });
       } else {
-        onRefused(t("error.generic"));
+        onRefused({ key: "error.generic" });
       }
     }
   }

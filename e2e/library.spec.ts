@@ -74,6 +74,24 @@ test("CA-0.5 a file that is not an image is refused with its name and the reason
   expect(await gridAlts(page)).toEqual(["a.png"]);
 });
 
+test("CA-0.10 a refusal already on screen changes language when the selector changes", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  const bad = join(workDir, "notes.png");
+  await writeFile(bad, "just some text, not an image");
+  await choose(page, [bad]);
+  await expect(page.getByRole("alert")).toHaveText(
+    "notes.png: unsupported type. Use PNG, JPEG or WebP.",
+  );
+  await page.getByLabel("Language").selectOption({ label: "Português" });
+  await expect(page.getByRole("alert")).toHaveText(
+    "notes.png: tipo não aceito. Use PNG, JPEG ou WebP.",
+  );
+  await expect(page.getByText("unsupported type")).toHaveCount(0);
+});
+
 test("CA-0.5 a file over 25 MB is refused with its name and the reason", async ({ page, app }) => {
   await page.goto(app.url);
   const big = join(workDir, "big.png");

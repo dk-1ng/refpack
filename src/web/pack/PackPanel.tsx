@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { createPack } from "../api.ts";
-import { useI18n } from "../i18n/index.tsx";
+import { type Notice, useI18n } from "../i18n/index.tsx";
 
 export function PackPanel({
   imageCount,
   onFailed,
 }: {
   imageCount: number;
-  onFailed: (message: string) => void;
+  onFailed: (notice: Notice) => void;
 }) {
   const { t } = useI18n();
   const [path, setPath] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export function PackPanel({
       setPath(result.pack.path);
       setCopied(false);
     } else {
-      onFailed(t("error.generic"));
+      onFailed({ key: "error.generic" });
     }
   }
 
@@ -29,7 +29,7 @@ export function PackPanel({
       await navigator.clipboard.writeText(path);
       setCopied(true);
     } catch {
-      onFailed(t("error.generic"));
+      onFailed({ key: "error.generic" });
     }
   }
 

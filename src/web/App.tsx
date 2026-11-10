@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Image } from "../shared/api.ts";
 import { fetchImages } from "./api.ts";
-import { LANGUAGES, type Language, useI18n } from "./i18n/index.tsx";
+import { LANGUAGES, type Language, type Notice, useI18n } from "./i18n/index.tsx";
 import { AddImages } from "./library/AddImages.tsx";
 import { ImageGrid } from "./library/ImageGrid.tsx";
 import { PackPanel } from "./pack/PackPanel.tsx";
@@ -9,7 +9,7 @@ import { PackPanel } from "./pack/PackPanel.tsx";
 export function App() {
   const { language, setLanguage, t } = useI18n();
   const [images, setImages] = useState<Image[] | null>(null);
-  const [refusals, setRefusals] = useState<string[]>([]);
+  const [refusals, setRefusals] = useState<Notice[]>([]);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -51,17 +51,17 @@ export function App() {
       </header>
       <AddImages
         onAdded={(image) => setImages((current) => [image, ...(current ?? [])])}
-        onRefused={(message) => setRefusals((current) => [...current, message])}
+        onRefused={(notice) => setRefusals((current) => [...current, notice])}
       />
       <PackPanel
         imageCount={images?.length ?? 0}
-        onFailed={(message) => setRefusals((current) => [...current, message])}
+        onFailed={(notice) => setRefusals((current) => [...current, notice])}
       />
       {refusals.length > 0 ? (
         <ul role="alert" className="refusals">
-          {refusals.map((message, index) => (
+          {refusals.map((notice, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: append-only list of messages
-            <li key={index}>{message}</li>
+            <li key={index}>{t(notice.key, notice.vars)}</li>
           ))}
         </ul>
       ) : null}

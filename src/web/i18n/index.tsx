@@ -6,6 +6,7 @@ export type Language = "pt-BR" | "en";
 export const LANGUAGES: readonly Language[] = ["pt-BR", "en"];
 export type MessageKey = keyof typeof ptBR;
 type Vars = Record<string, string>;
+export type Notice = { key: MessageKey; vars?: Vars };
 
 const STORAGE_KEY = "refpack.language";
 const dictionaries: Record<Language, Record<MessageKey, string>> = { "pt-BR": ptBR, en };
