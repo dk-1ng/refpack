@@ -118,3 +118,17 @@ test.describe("real files and folders from disk", () => {
     await expect(images(page)).toHaveCount(0);
   });
 });
+
+test("CA-1.9 an image dragged from the grid and dropped on the screen adds nothing", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [{ name: "a.png", content: "image/png" }]);
+  await expect(images(page)).toHaveCount(1);
+  await images(page)
+    .first()
+    .dragTo(page.getByRole("heading", { name: "refpack" }));
+  await expect(images(page)).toHaveCount(1);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
