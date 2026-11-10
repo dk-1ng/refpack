@@ -100,3 +100,66 @@ test("POST /api/packs answers 409 empty-library when there are no images", async
   expect(response.status).toBe(409);
   expect(ErrorSchema.parse(await response.json()).error.code).toBe("empty-library");
 });
+
+const UNKNOWN_ID = "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f";
+
+function put(app: ReturnType<typeof makeApp>, path: string, body: string) {
+  return localRequest(app, path, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body,
+  });
+}
+
+async function selectedFlags(app: ReturnType<typeof makeApp>): Promise<boolean[]> {
+  const listed = ImageListSchema.parse(await (await localRequest(app, "/api/images")).json());
+  return listed.images.map((image) => image.selected);
+}
+
+test("CA-2.1 PUT /api/images/:id/selected stores the choice and GET /api/images shows it", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  expect(image.selected).toBe(false);
+  const response = await put(app, `/api/images/${image.id}/selected`, '{"selected":true}');
+  expect(response.status).toBe(204);
+  expect(await selectedFlags(app)).toEqual([true]);
+});
+
+test("PUT /api/images/:id/selected answers 404 not-found for an unknown or malformed id", async () => {
+  const app = makeApp();
+  for (const id of [UNKNOWN_ID, "not-a-uuid"]) {
+    const response = await put(app, `/api/images/${id}/selected`, '{"selected":true}');
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: { code: "not-found" } });
+  }
+});
+
+test("PUT /api/images/:id/selected answers 400 invalid-request for a wrong body", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  for (const body of ["{}", '{"selected":"yes"}', "not json"]) {
+    const response = await put(app, `/api/images/${image.id}/selected`, body);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: { code: "invalid-request" } });
+  }
+  expect(await selectedFlags(app)).toEqual([false]);
+});
+
+test("CA-2.2 PUT /api/draft/selection selects every image, then none", async () => {
+  const app = makeApp();
+  await upload(app, PNG_BYTES);
+  await upload(app, PNG_BYTES);
+  expect((await put(app, "/api/draft/selection", '{"selected":true}')).status).toBe(204);
+  expect(await selectedFlags(app)).toEqual([true, true]);
+  expect((await put(app, "/api/draft/selection", '{"selected":false}')).status).toBe(204);
+  expect(await selectedFlags(app)).toEqual([false, false]);
+});
+
+test("CA-0.11 the selection routes are behind the local-only guard", async () => {
+  const response = await makeApp().request("http://evil.example/api/draft/selection", {
+    method: "PUT",
+    headers: { host: "evil.example", "content-type": "application/json" },
+    body: '{"selected":true}',
+  });
+  expect(response.status).toBe(403);
+});

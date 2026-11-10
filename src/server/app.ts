@@ -5,7 +5,8 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { type ErrorCode, type Image, MAX_IMAGE_BYTES } from "../shared/api.ts";
+import { type ErrorCode, type Image, MAX_IMAGE_BYTES, SelectedBodySchema } from "../shared/api.ts";
+import { setAllSelected, setSelected } from "./draft.ts";
 import { localOnly } from "./guard.ts";
 import { addImage, findImage, type Library, listImages, type StoredImage } from "./library.ts";
 import { createPack } from "./pack.ts";
@@ -25,7 +26,17 @@ function toImage(image: StoredImage): Image {
     id: image.id,
     originalName: image.originalName,
     url: `/api/images/${image.id}/file`,
+    selected: image.selected,
   };
+}
+
+async function readSelectedBody(request: Request): Promise<boolean | null> {
+  try {
+    const parsed = SelectedBodySchema.safeParse(await request.json());
+    return parsed.success ? parsed.data.selected : null;
+  } catch {
+    return null;
+  }
 }
 
 function decodeName(header: string | undefined): string {
@@ -68,6 +79,22 @@ export function createApp(deps: AppDeps): Hono {
     if (image === null) return c.json(errorBody("not-found"), 404);
     const bytes = await readFile(join(library.imagesDir, image.fileName));
     return c.body(new Uint8Array(bytes), 200, { "content-type": image.mimeType });
+  });
+
+  app.put("/api/images/:id/selected", async (c) => {
+    const selected = await readSelectedBody(c.req.raw);
+    if (selected === null) return c.json(errorBody("invalid-request"), 400);
+    if (!setSelected(library, c.req.param("id"), selected)) {
+      return c.json(errorBody("not-found"), 404);
+    }
+    return c.body(null, 204);
+  });
+
+  app.put("/api/draft/selection", async (c) => {
+    const selected = await readSelectedBody(c.req.raw);
+    if (selected === null) return c.json(errorBody("invalid-request"), 400);
+    setAllSelected(library, selected);
+    return c.body(null, 204);
   });
 
   app.post("/api/packs", (c) => {
