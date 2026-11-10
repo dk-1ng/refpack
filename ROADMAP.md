@@ -8,8 +8,8 @@ Só a próxima fatia é detalhada (critérios de aceite no `SPEC.md`, tarefas em
 
 | # | Fatia | O que eu consigo fazer ao final | Estado |
 | --- | --- | --- | --- |
-| 0 | Walking skeleton | Abrir o refpack, adicionar uma imagem, vê-la na tela e gerar uma pasta-pacote que o Claude Code lê. | próxima |
-| 1 | Colar e arrastar | Colar um screenshot da área de transferência e arrastar arquivos para a tela; eles entram na biblioteca como os escolhidos pelo botão. | roteiro |
+| 0 | Walking skeleton | Abrir o refpack, adicionar uma imagem, vê-la na tela e gerar uma pasta-pacote que o Claude Code lê. | feita |
+| 1 | Colar e arrastar | Colar um screenshot da área de transferência e arrastar arquivos para a tela; eles entram na biblioteca como os escolhidos pelo botão. | próxima |
 | 2 | Escolher e dizer a intenção | Escolher quais imagens entram no pacote e escrever a intenção do projeto, que sai no pacote. | roteiro |
 | 3 | Nota geral | Escrever uma nota em cada imagem; ela salva sozinha, fica exatamente como escrevi e sai no pacote. | roteiro |
 | 4 | Marcar partes | Marcar áreas de uma imagem com "gosto" ou "não gosto" e um comentário; o pacote traz o recorte de cada marcação. | roteiro |
