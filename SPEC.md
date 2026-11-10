@@ -114,7 +114,7 @@ Eu guardo um screenshot do que o agente fez junto do pacote, anoto o que acertou
 - Dado que a biblioteca tem pelo menos uma imagem,
 - quando eu clico em "Gerar pacote",
 - então é criada a pasta `packs/pack-AAAAMMDD-HHMMSS/` contendo:
-  - `refs/` com uma cópia de cada imagem da biblioteca, nomeada `01`, `02`, … com a extensão original, na ordem da grade;
+  - `refs/` com uma cópia de cada imagem da biblioteca, nomeada `01`, `02`, … com a extensão do formato da imagem (`.png`, `.jpg` ou `.webp`), na ordem da grade;
   - `README.md`, em inglês, explicando ao agente o que é o pacote e listando cada referência pelo número e pelo arquivo;
   - `.gitignore` que ignora tudo dentro do pacote, para que ele não seja commitado por engano se for copiado para um projeto.
 - Nesta fatia o pacote leva **todas** as imagens da biblioteca; escolher quais entram é a fatia 2.

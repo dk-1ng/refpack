@@ -34,3 +34,5 @@ Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só 
 - Escolher a pasta de destino do pacote.
 - Apagar uma imagem da biblioteca.
 - Detecção de imagens repetidas.
+- Limpeza técnica: conferir com zod o nome original do arquivo que chega junto com a imagem.
+- Rodar `pnpm start` com o refpack já aberto mostra só o aviso, sem a linha de erro do pnpm depois dele.
