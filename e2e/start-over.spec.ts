@@ -91,7 +91,7 @@ test("CA-3.8 starting another pack keeps every note", async ({ page, app }) => {
   await drop(page, [a]);
   await expect(images(page)).toHaveCount(1);
   const item = page.getByRole("listitem").filter({ has: page.getByAltText("a.png") });
-  await item.getByRole("button", { name: "Note" }).click();
+  await item.getByRole("button", { name: "Annotate" }).click();
   const viewer = page.getByRole("dialog");
   const note = viewer.getByLabel("Note on this image");
   await note.fill("keep me");
@@ -110,7 +110,7 @@ test("CA-3.8 starting another pack keeps every note", async ({ page, app }) => {
   await expect.poll(() => message).not.toBe("");
   await expect(page.getByText("0 of 1 selected")).toBeVisible();
   await expect(item.getByTitle("Has a note")).toBeVisible();
-  await item.getByRole("button", { name: "Note" }).click();
+  await item.getByRole("button", { name: "Annotate" }).click();
   await expect(note).toHaveValue("keep me");
   await viewer.getByRole("button", { name: "Close" }).click();
   await expect(viewer).toHaveCount(0);

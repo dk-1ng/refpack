@@ -12,7 +12,7 @@ const TEXT = "  # Gosto do espaçamento 🍇\n\n* evitar o `azul` & a sombra  \n
 const item = (page: Page, name: string) =>
   page.getByRole("listitem").filter({ has: page.getByAltText(name) });
 const noteButton = (page: Page, name: string) =>
-  item(page, name).getByRole("button", { name: "Note" });
+  item(page, name).getByRole("button", { name: "Annotate" });
 const mark = (page: Page, name: string) => item(page, name).getByTitle("Has a note");
 const viewer = (page: Page) => page.getByRole("dialog");
 const note = (page: Page) => viewer(page).getByLabel("Note on this image");
@@ -25,7 +25,7 @@ async function open(page: Page, name: string): Promise<void> {
   await expect(viewer(page)).toBeVisible();
 }
 
-test("CA-3.1 the Note button opens the image large, whole, with the cursor in the note box", async ({
+test("CA-3.1 the Annotate button opens the image large, whole, with the cursor in the note box", async ({
   page,
   app,
 }) => {
@@ -63,7 +63,7 @@ test("CA-3.2 the note box shows a hint and saves by itself, in both languages", 
   await button(page, "Close").click();
   await expect(viewer(page)).toHaveCount(0);
   await page.getByLabel("Language").selectOption({ label: "Português" });
-  await item(page, "a.png").getByRole("button", { name: "Nota" }).click();
+  await item(page, "a.png").getByRole("button", { name: "Anotar" }).click();
   const box = viewer(page).getByLabel("Nota desta imagem");
   await expect(box).toHaveValue("Great spacing");
   await expect(box).toHaveAttribute("placeholder", "O que aproveitar e o que evitar nesta imagem.");
@@ -107,13 +107,13 @@ test("CA-3.1 CA-3.5 two images with the same name keep separate notes", async ({
   await expect(images(page)).toHaveCount(1);
   await drop(page, [a]);
   await expect(images(page)).toHaveCount(2);
-  await page.getByRole("button", { name: "Note" }).first().click();
+  await page.getByRole("button", { name: "Annotate" }).first().click();
   await note(page).fill("first");
   await expect(status(page)).toHaveText("Saved");
   await button(page, "Close").click();
   await expect(viewer(page)).toHaveCount(0);
   await expect(page.getByTitle("Has a note")).toHaveCount(1);
-  await page.getByRole("button", { name: "Note" }).nth(1).click();
+  await page.getByRole("button", { name: "Annotate" }).nth(1).click();
   await expect(note(page)).toHaveValue("");
 });
 
@@ -129,12 +129,12 @@ test("CA-3.3 Close and Esc go back to the grid at the same point", async ({ page
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   const y = await page.evaluate(() => window.scrollY);
   expect(y).toBeGreaterThan(0);
-  await page.getByRole("button", { name: "Note" }).last().click();
+  await page.getByRole("button", { name: "Annotate" }).last().click();
   await expect(viewer(page)).toBeVisible();
   await button(page, "Close").click();
   await expect(viewer(page)).toHaveCount(0);
   expect(await page.evaluate(() => window.scrollY)).toBe(y);
-  await page.getByRole("button", { name: "Note" }).last().click();
+  await page.getByRole("button", { name: "Annotate" }).last().click();
   await expect(viewer(page)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(viewer(page)).toHaveCount(0);
@@ -279,7 +279,7 @@ test("CA-3.4 the buttons follow the screen language", async ({ page, app }) => {
   await page.getByLabel("Language").selectOption({ label: "Português" });
   await drop(page, [a, b]);
   await expect(images(page)).toHaveCount(2);
-  await item(page, "b.jpg").getByRole("button", { name: "Nota" }).click();
+  await item(page, "b.jpg").getByRole("button", { name: "Anotar" }).click();
   await expect(viewer(page)).toBeVisible();
   await expect(button(page, "Anterior")).toBeDisabled();
   await expect(button(page, "Próxima")).toBeEnabled();

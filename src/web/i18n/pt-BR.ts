@@ -21,7 +21,7 @@ export const ptBR = {
   "selection.count": "{selected} de {total} selecionadas",
   "selection.all": "Selecionar todas",
   "selection.clear": "Limpar seleção",
-  "note.open": "Nota",
+  "note.open": "Anotar",
   "note.has": "Tem nota",
   "note.label": "Nota desta imagem",
   "note.placeholder": "O que aproveitar e o que evitar nesta imagem.",

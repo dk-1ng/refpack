@@ -22,7 +22,7 @@ export const en: Record<MessageKey, string> = {
   "selection.count": "{selected} of {total} selected",
   "selection.all": "Select all",
   "selection.clear": "Clear selection",
-  "note.open": "Note",
+  "note.open": "Annotate",
   "note.has": "Has a note",
   "note.label": "Note on this image",
   "note.placeholder": "What to take from this image and what to avoid.",
