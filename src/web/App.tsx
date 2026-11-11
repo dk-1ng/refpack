@@ -125,7 +125,7 @@ export function App() {
         </label>
       </header>
       <AddImages onAdded={addImage} onRefused={refuse} />
-      <IncomingFiles onAdded={addImage} onRefused={refuse} />
+      <IncomingFiles onAdded={addImage} onRefused={refuse} paused={openImage !== null} />
       <IntentBox text={intent.text} saveState={intent.saveState} onChange={intent.change} />
       <PackPanel
         imageCount={images?.length ?? 0}

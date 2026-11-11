@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
-import { drop, expect, test } from "./support.ts";
+import { drop, expect, paste, pasteInto, test } from "./support.ts";
 
 const a = { name: "a.png", content: "image/png" } as const;
 const b = { name: "b.jpg", content: "image/jpeg" } as const;
@@ -309,4 +309,49 @@ test("CA-3.9 moving to another image with an unsaved note asks first", async ({ 
   await button(page, "Next").click();
   await expect(dialogNamed(page, "a.png")).toBeVisible();
   await expect(note(page)).toHaveValue("");
+});
+
+test("CA-3.10 text pasted into the note box shows no notice", async ({ page, app }) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await expect(images(page)).toHaveCount(1);
+  await open(page, "a.png");
+  await pasteInto(note(page), [], "hello");
+  await button(page, "Close").click();
+  await expect(viewer(page)).toHaveCount(0);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("CA-3.10 with an image open, pasting and dropping add nothing and show no notice", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await expect(images(page)).toHaveCount(1);
+  await open(page, "a.png");
+  await note(page).fill("abc");
+  await expect(status(page)).toHaveText("Saved");
+  const url = page.url();
+
+  await pasteInto(note(page), [{ name: "p.png", content: "image/png" }]);
+  await paste(page, [{ name: "q.png", content: "image/png" }]);
+  await paste(page, [], "x");
+  await drop(page, [{ name: "d.png", content: "image/png" }]);
+  await drop(page, [], "some text");
+  const dataTransfer = await page.evaluateHandle(() => {
+    const data = new DataTransfer();
+    data.items.add(new File(["x"], "a.png", { type: "image/png" }));
+    return data;
+  });
+  await page.locator("main").dispatchEvent("dragenter", { dataTransfer });
+  await expect(page.getByText("Drop to add")).toHaveCount(0);
+  await expect(note(page)).toHaveValue("abc");
+  expect(page.url()).toBe(url);
+  await button(page, "Close").click();
+  await expect(viewer(page)).toHaveCount(0);
+
+  await drop(page, [c]);
+  await expect(images(page)).toHaveCount(2);
+  await expect(page.getByRole("alert")).toHaveCount(0);
 });
