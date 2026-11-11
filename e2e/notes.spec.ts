@@ -221,8 +221,13 @@ test("CA-3.9 a note that cannot be saved stays in the box with a warning, and cl
   await expect(viewer(page)).toBeVisible();
   await expect(note(page)).toHaveValue("abc");
 
-  page.once("dialog", (dialog) => void dialog.dismiss());
+  message = "";
+  page.once("dialog", (dialog) => {
+    message = dialog.message();
+    void dialog.dismiss();
+  });
   await page.keyboard.press("Escape");
+  await expect.poll(() => message).toBe("This note was not saved. Leave anyway?");
   await expect(viewer(page)).toBeVisible();
   await expect(note(page)).toHaveValue("abc");
 
