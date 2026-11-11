@@ -11,13 +11,21 @@ Só a próxima fatia é detalhada (critérios de aceite no `SPEC.md`, tarefas em
 | 0 | Walking skeleton | Abrir o refpack, adicionar uma imagem, vê-la na tela e gerar uma pasta-pacote que o Claude Code lê. | feita |
 | 1 | Colar e arrastar | Colar um screenshot da área de transferência e arrastar arquivos para a tela; eles entram na biblioteca como os escolhidos pelo botão. | feita |
 | 2 | Escolher e dizer a intenção | Escolher quais imagens entram no pacote e escrever a intenção do projeto, que sai no pacote. | feita |
-| 3 | Nota geral | Escrever uma nota em cada imagem; ela salva sozinha, fica exatamente como escrevi e sai no pacote. | próxima |
-| 4 | Marcar partes | Marcar áreas de uma imagem com "gosto" ou "não gosto" e um comentário; o pacote traz o recorte de cada marcação. | roteiro |
+| 3 | Nota geral | Escrever uma nota em cada imagem; ela salva sozinha, fica exatamente como escrevi e sai no pacote. | feita |
+| 4 | Marcar partes | Marcar áreas de uma imagem com "gosto" ou "não gosto" e um comentário; o pacote traz o recorte de cada marcação. | próxima |
 | 5 | Etiquetas | Etiquetar imagens e filtrar a grade por etiqueta. | roteiro |
 | 6 | Entrada em volume | Importar uma pasta inteira; a grade continua rápida com milhares de imagens. | roteiro |
 | 7 | Sugestões da IA | Pedir ao Claude Code que descreva as imagens novas e revisar cada sugestão: aceitar, corrigir ou rejeitar. | roteiro |
 | 8 | Famílias | Receber famílias estéticas propostas pela IA, aprovar, renomear ou desfazer, e montar um pacote a partir de uma delas. | roteiro |
 | 9 | Retorno | Guardar o resultado que o agente gerou, anotar o que acertou e errou, e promovê-lo a referência. | roteiro |
+
+## Entram como critérios na próxima fatia
+
+Decisão do dono ao aprovar a fatia 3. O arquiteto escreve os critérios no `SPEC.md` ao planejar a fatia 4.
+
+- Uma imagem colada ou solta logo que a tela abre, antes de a lista carregar, aparece uma vez só na grade.
+- O teste do CA-0.3 espera as imagens carregarem antes de medi-las, sem falhar de vez em quando no CI.
+- Quando a tela e o servidor estão em versões diferentes (refpack atualizado sem reiniciar), a tela avisa em vez de mostrar a grade vazia.
 
 ## Depois
 
