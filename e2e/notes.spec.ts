@@ -5,6 +5,7 @@ import { drop, expect, test } from "./support.ts";
 
 const a = { name: "a.png", content: "image/png" } as const;
 const b = { name: "b.jpg", content: "image/jpeg" } as const;
+const c = { name: "c.webp", content: "image/webp" } as const;
 
 const TEXT = "  # Gosto do espaçamento 🍇\n\n* evitar o `azul` & a sombra  \n";
 
@@ -229,4 +230,78 @@ test("CA-3.9 a note that cannot be saved stays in the box with a warning, and cl
   await button(page, "Close").click();
   await expect(viewer(page)).toHaveCount(0);
   await expect(mark(page, "a.png")).toHaveCount(0);
+});
+
+const dialogNamed = (page: Page, name: string) => page.getByRole("dialog", { name });
+
+test("CA-3.4 Next and Previous walk the grid order, each image with its own note", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a, b, c]);
+  await expect(images(page)).toHaveCount(3);
+  await open(page, "c.webp");
+  await expect(button(page, "Previous")).toBeDisabled();
+  await expect(button(page, "Next")).toBeEnabled();
+  await note(page).fill("on c");
+  await button(page, "Next").click();
+  await expect(dialogNamed(page, "b.jpg")).toBeVisible();
+  await expect(note(page)).toBeFocused();
+  await expect(note(page)).toHaveValue("");
+  await note(page).fill("on b");
+  await button(page, "Next").click();
+  await expect(dialogNamed(page, "a.png")).toBeVisible();
+  await expect(button(page, "Next")).toBeDisabled();
+  await button(page, "Previous").click();
+  await expect(dialogNamed(page, "b.jpg")).toBeVisible();
+  await expect(note(page)).toHaveValue("on b");
+  await button(page, "Previous").click();
+  await expect(dialogNamed(page, "c.webp")).toBeVisible();
+  await expect(note(page)).toHaveValue("on c");
+  await button(page, "Close").click();
+  await expect(viewer(page)).toHaveCount(0);
+  await expect(mark(page, "c.webp")).toBeVisible();
+  await expect(mark(page, "b.jpg")).toBeVisible();
+  await expect(mark(page, "a.png")).toHaveCount(0);
+  await page.reload();
+  await open(page, "c.webp");
+  await expect(note(page)).toHaveValue("on c");
+});
+
+test("CA-3.4 the buttons follow the screen language", async ({ page, app }) => {
+  await page.goto(app.url);
+  await page.getByLabel("Language").selectOption({ label: "Português" });
+  await drop(page, [a, b]);
+  await expect(images(page)).toHaveCount(2);
+  await item(page, "b.jpg").getByRole("button", { name: "Nota" }).click();
+  await expect(viewer(page)).toBeVisible();
+  await expect(button(page, "Anterior")).toBeDisabled();
+  await expect(button(page, "Próxima")).toBeEnabled();
+});
+
+test("CA-3.9 moving to another image with an unsaved note asks first", async ({ page, app }) => {
+  await page.goto(app.url);
+  await drop(page, [a, b]);
+  await expect(images(page)).toHaveCount(2);
+  await open(page, "b.jpg");
+  await page.route("**/api/images/*/note", (route) => route.abort("connectionrefused"));
+  await note(page).pressSequentially("abc");
+  await expect(status(page)).toHaveText(
+    "Could not save. Check that refpack is still running in the terminal.",
+  );
+  let message = "";
+  page.once("dialog", (dialog) => {
+    message = dialog.message();
+    void dialog.dismiss();
+  });
+  await button(page, "Next").click();
+  await expect.poll(() => message).toBe("This note was not saved. Leave anyway?");
+  await expect(dialogNamed(page, "b.jpg")).toBeVisible();
+  await expect(note(page)).toHaveValue("abc");
+
+  page.once("dialog", (dialog) => void dialog.accept());
+  await button(page, "Next").click();
+  await expect(dialogNamed(page, "a.png")).toBeVisible();
+  await expect(note(page)).toHaveValue("");
 });

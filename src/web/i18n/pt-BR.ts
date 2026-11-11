@@ -27,6 +27,8 @@ export const ptBR = {
   "note.placeholder": "O que aproveitar e o que evitar nesta imagem.",
   "note.confirmLeave": "Esta nota não foi salva. Sair mesmo assim?",
   "viewer.close": "Fechar",
+  "viewer.previous": "Anterior",
+  "viewer.next": "Próxima",
   "error.notSaved": "Não foi possível salvar. Confira se o refpack ainda está rodando no terminal.",
   "error.unsupportedType": "{name}: tipo não aceito. Use PNG, JPEG ou WebP.",
   "error.tooLarge": "{name}: passa de 25 MB.",

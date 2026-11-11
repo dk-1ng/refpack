@@ -17,7 +17,8 @@ export function App() {
   const [refusals, setRefusals] = useState<Notice[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const intent = useIntent();
-  const openImage = images?.find((image) => image.id === openId) ?? null;
+  const openIndex = images?.findIndex((image) => image.id === openId) ?? -1;
+  const openImage = images?.[openIndex] ?? null;
 
   const addImage = useCallback(
     (image: Image) => setImages((current) => [image, ...(current ?? [])]),
@@ -164,6 +165,9 @@ export function App() {
         <ImageViewer
           key={openImage.id}
           image={openImage}
+          previousId={images?.[openIndex - 1]?.id ?? null}
+          nextId={images?.[openIndex + 1]?.id ?? null}
+          onOpen={setOpenId}
           onClose={() => setOpenId(null)}
           onSaved={noteSaved}
         />

@@ -5,10 +5,16 @@ import { useNote } from "./use-note.ts";
 
 export function ImageViewer({
   image,
+  previousId,
+  nextId,
+  onOpen,
   onClose,
   onSaved,
 }: {
   image: Image;
+  previousId: string | null;
+  nextId: string | null;
+  onOpen: (id: string) => void;
   onClose: () => void;
   onSaved: (id: string, note: string) => void;
 }) {
@@ -67,9 +73,25 @@ export function ImageViewer({
           {note.saveState === "saved" ? t("intent.saved") : null}
           {note.saveState === "failed" ? t("error.notSaved") : null}
         </span>
-        <button type="button" onClick={() => void leave(onClose)}>
-          {t("viewer.close")}
-        </button>
+        <div className="viewer-buttons">
+          <button
+            type="button"
+            disabled={previousId === null}
+            onClick={() => previousId !== null && void leave(() => onOpen(previousId))}
+          >
+            {t("viewer.previous")}
+          </button>
+          <button
+            type="button"
+            disabled={nextId === null}
+            onClick={() => nextId !== null && void leave(() => onOpen(nextId))}
+          >
+            {t("viewer.next")}
+          </button>
+          <button type="button" onClick={() => void leave(onClose)}>
+            {t("viewer.close")}
+          </button>
+        </div>
       </div>
     </dialog>
   );

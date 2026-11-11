@@ -28,6 +28,8 @@ export const en: Record<MessageKey, string> = {
   "note.placeholder": "What to take from this image and what to avoid.",
   "note.confirmLeave": "This note was not saved. Leave anyway?",
   "viewer.close": "Close",
+  "viewer.previous": "Previous",
+  "viewer.next": "Next",
   "error.notSaved": "Could not save. Check that refpack is still running in the terminal.",
   "error.unsupportedType": "{name}: unsupported type. Use PNG, JPEG or WebP.",
   "error.tooLarge": "{name}: larger than 25 MB.",

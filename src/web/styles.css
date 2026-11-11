@@ -176,3 +176,8 @@ header label {
   min-height: 1.5em;
   color: #555555;
 }
+
+.viewer-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
