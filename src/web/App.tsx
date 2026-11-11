@@ -95,7 +95,11 @@ export function App() {
     fetchImages().then(
       (loaded) => {
         if (!cancelled) {
-          setImages((current) => (current === null ? loaded : [...current, ...loaded]));
+          setImages((current) => {
+            if (current === null) return loaded;
+            const known = new Set(current.map((image) => image.id));
+            return [...current, ...loaded.filter((image) => !known.has(image.id))];
+          });
         }
       },
       () => {
