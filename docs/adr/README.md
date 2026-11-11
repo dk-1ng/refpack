@@ -20,3 +20,5 @@ Regras:
 | [0008](0008-idiomas.md) | Tela em pt-BR e en por dicionários; docs em português, código em inglês | Aceito |
 | [0009](0009-papeis-dos-modelos-e-ciclo-da-fatia.md) | Papel de cada modelo, limites de correção e ciclo da fatia | Aceito |
 | [0010](0010-testes-tambem-no-firefox.md) | Testes de ponta a ponta no Chromium e no Firefox | Aceito |
+| [0011](0011-pacote-em-montagem-no-banco.md) | A seleção e a intenção ficam no banco da biblioteca; a intenção sai em `INTENT.md` | Aceito |
+| [0012](0012-salvamento-automatico.md) | Salvamento automático: na hora, um de cada vez, e a tela só mostra o que foi confirmado | Aceito |

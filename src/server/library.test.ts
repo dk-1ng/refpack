@@ -1,7 +1,9 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { afterEach, expect, test } from "vitest";
 import { MAX_IMAGE_BYTES } from "../shared/api.ts";
+import { getIntent } from "./draft.ts";
 import {
   addImage,
   closeLibrary,
@@ -93,4 +95,27 @@ test("resolveLibraryRoot uses REFPACK_LIBRARY when set and the home folder other
   expect(resolveLibraryRoot({ REFPACK_LIBRARY: "" }, "/home/u")).toBe(
     join("/home/u", "refpack-library"),
   );
+});
+
+test("CA-0.6 a library created before slice 2 opens with every image unselected", () => {
+  const root = tempLibraryRoot();
+  mkdirSync(join(root, "images"), { recursive: true });
+  const old = new DatabaseSync(join(root, "library.db"));
+  old.exec(readFileSync(join(import.meta.dirname, "migrations", "001-images.sql"), "utf8"));
+  old.exec("PRAGMA user_version = 1");
+  old
+    .prepare("INSERT INTO images (id, original_name, mime_type) VALUES (?, ?, ?)")
+    .run("3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f", "antiga.png", "image/png");
+  old.close();
+  const library = open(root);
+  expect(listImages(library)).toEqual([
+    {
+      id: "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f",
+      originalName: "antiga.png",
+      mimeType: "image/png",
+      fileName: "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f.png",
+      selected: false,
+    },
+  ]);
+  expect(getIntent(library)).toBe("");
 });

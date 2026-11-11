@@ -1,0 +1,1 @@
+ALTER TABLE images ADD COLUMN selected INTEGER NOT NULL DEFAULT 0 CHECK (selected IN (0, 1));

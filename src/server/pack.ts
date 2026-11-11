@@ -1,5 +1,6 @@
 import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { getIntent } from "./draft.ts";
 import { type Library, listImages } from "./library.ts";
 
 function two(value: number): string {
@@ -25,7 +26,7 @@ export function refNumber(index: number, count: number): string {
 
 export type PackResult =
   | { ok: true; path: string; count: number }
-  | { ok: false; code: "empty-library" };
+  | { ok: false; code: "nothing-selected" };
 
 function createFreshFolder(packsDir: string, baseName: string): string {
   for (let attempt = 1; ; attempt++) {
@@ -42,9 +43,9 @@ function createFreshFolder(packsDir: string, baseName: string): string {
 }
 
 export function createPack(library: Library, now: Date): PackResult {
-  const images = listImages(library);
+  const images = listImages(library).filter((image) => image.selected);
   if (images.length === 0) {
-    return { ok: false, code: "empty-library" };
+    return { ok: false, code: "nothing-selected" };
   }
   mkdirSync(library.packsDir, { recursive: true });
   const path = createFreshFolder(resolve(library.packsDir), packFolderName(now));
@@ -57,11 +58,20 @@ export function createPack(library: Library, now: Date): PackResult {
   });
   writeFileSync(join(path, ".gitignore"), "*\n");
   const created = `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())} ${two(now.getHours())}:${two(now.getMinutes())}:${two(now.getSeconds())}`;
+  const intent = getIntent(library);
+  const hasIntent = intent.trim() !== "";
+  if (hasIntent) writeFileSync(join(path, "INTENT.md"), intent);
   const readme = [
     "# Reference pack",
     "",
     "This folder is a set of design references exported from refpack.",
     "Use the images in `refs/` as visual references for the interface you are asked to build.",
+    ...(hasIntent
+      ? [
+          "",
+          "Read `INTENT.md` before you look at the references. It says what is being built, for whom, and what they need to be able to do. It is in the owner's own words and may be in a language other than English.",
+        ]
+      : []),
     "",
     `- Created: ${created}`,
     `- References: ${images.length}`,

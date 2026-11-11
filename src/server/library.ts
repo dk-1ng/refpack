@@ -12,6 +12,7 @@ export type StoredImage = {
   originalName: string;
   mimeType: ImageType["mimeType"];
   fileName: string;
+  selected: boolean;
 };
 
 const migrationsDir = join(import.meta.dirname, "migrations");
@@ -20,6 +21,7 @@ const ImageRowSchema = z.object({
   id: z.uuid(),
   original_name: z.string(),
   mime_type: z.enum(["image/png", "image/jpeg", "image/webp"]),
+  selected: z.union([z.literal(0), z.literal(1)]),
 });
 
 const extensionByMimeType: Record<ImageType["mimeType"], ImageType["extension"]> = {
@@ -73,6 +75,7 @@ function toStoredImage(row: unknown): StoredImage {
     originalName: parsed.original_name,
     mimeType: parsed.mime_type,
     fileName: `${parsed.id}.${extensionByMimeType[parsed.mime_type]}`,
+    selected: parsed.selected === 1,
   };
 }
 
@@ -95,20 +98,26 @@ export function addImage(
     .run(id, input.originalName, type.mimeType);
   return {
     ok: true,
-    image: { id, originalName: input.originalName, mimeType: type.mimeType, fileName },
+    image: {
+      id,
+      originalName: input.originalName,
+      mimeType: type.mimeType,
+      fileName,
+      selected: false,
+    },
   };
 }
 
 export function listImages(library: Library): StoredImage[] {
   const rows = library.db
-    .prepare("SELECT id, original_name, mime_type FROM images ORDER BY seq DESC")
+    .prepare("SELECT id, original_name, mime_type, selected FROM images ORDER BY seq DESC")
     .all();
   return rows.map(toStoredImage);
 }
 
 export function findImage(library: Library, id: string): StoredImage | null {
   const row = library.db
-    .prepare("SELECT id, original_name, mime_type FROM images WHERE id = ?")
+    .prepare("SELECT id, original_name, mime_type, selected FROM images WHERE id = ?")
     .get(id);
   return row === undefined ? null : toStoredImage(row);
 }

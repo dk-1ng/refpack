@@ -5,7 +5,9 @@ import {
   ErrorSchema,
   ImageListSchema,
   ImageSchema,
+  IntentSchema,
   MAX_IMAGE_BYTES,
+  MAX_INTENT_LENGTH,
   PackCreatedSchema,
 } from "../shared/api.ts";
 import { createApp } from "./app.ts";
@@ -86,6 +88,7 @@ test("CA-0.7 POST /api/packs answers 201 with the absolute path and the count", 
   const app = makeApp();
   await upload(app, PNG_BYTES);
   await upload(app, PNG_BYTES, "b.png");
+  expect((await put(app, "/api/draft/selection", '{"selected":true}')).status).toBe(204);
   const response = await localRequest(app, "/api/packs", { method: "POST" });
   expect(response.status).toBe(201);
   const pack = PackCreatedSchema.parse(await response.json());
@@ -95,8 +98,140 @@ test("CA-0.7 POST /api/packs answers 201 with the absolute path and the count", 
   expect(existsSync(pack.path)).toBe(true);
 });
 
-test("POST /api/packs answers 409 empty-library when there are no images", async () => {
+test("CA-2.8 POST /api/packs answers 409 nothing-selected when there are no images", async () => {
   const response = await localRequest(makeApp(), "/api/packs", { method: "POST" });
   expect(response.status).toBe(409);
-  expect(ErrorSchema.parse(await response.json()).error.code).toBe("empty-library");
+  expect(ErrorSchema.parse(await response.json()).error.code).toBe("nothing-selected");
+});
+
+test("CA-2.8 POST /api/packs answers 409 nothing-selected when no image is selected", async () => {
+  const app = makeApp();
+  await upload(app, PNG_BYTES);
+  const response = await localRequest(app, "/api/packs", { method: "POST" });
+  expect(response.status).toBe(409);
+  expect(ErrorSchema.parse(await response.json()).error.code).toBe("nothing-selected");
+});
+
+const UNKNOWN_ID = "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f";
+
+function put(app: ReturnType<typeof makeApp>, path: string, body: string) {
+  return localRequest(app, path, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body,
+  });
+}
+
+async function selectedFlags(app: ReturnType<typeof makeApp>): Promise<boolean[]> {
+  const listed = ImageListSchema.parse(await (await localRequest(app, "/api/images")).json());
+  return listed.images.map((image) => image.selected);
+}
+
+test("CA-2.1 PUT /api/images/:id/selected stores the choice and GET /api/images shows it", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  expect(image.selected).toBe(false);
+  const response = await put(app, `/api/images/${image.id}/selected`, '{"selected":true}');
+  expect(response.status).toBe(204);
+  expect(await selectedFlags(app)).toEqual([true]);
+});
+
+test("PUT /api/images/:id/selected answers 404 not-found for an unknown or malformed id", async () => {
+  const app = makeApp();
+  for (const id of [UNKNOWN_ID, "not-a-uuid"]) {
+    const response = await put(app, `/api/images/${id}/selected`, '{"selected":true}');
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: { code: "not-found" } });
+  }
+});
+
+test("PUT /api/images/:id/selected answers 400 invalid-request for a wrong body", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  for (const body of ["{}", '{"selected":"yes"}', "not json"]) {
+    const response = await put(app, `/api/images/${image.id}/selected`, body);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: { code: "invalid-request" } });
+  }
+  expect(await selectedFlags(app)).toEqual([false]);
+});
+
+test("CA-2.2 PUT /api/draft/selection selects every image, then none", async () => {
+  const app = makeApp();
+  await upload(app, PNG_BYTES);
+  await upload(app, PNG_BYTES);
+  expect((await put(app, "/api/draft/selection", '{"selected":true}')).status).toBe(204);
+  expect(await selectedFlags(app)).toEqual([true, true]);
+  expect((await put(app, "/api/draft/selection", '{"selected":false}')).status).toBe(204);
+  expect(await selectedFlags(app)).toEqual([false, false]);
+});
+
+test("CA-0.11 the selection routes are behind the local-only guard", async () => {
+  const response = await makeApp().request("http://evil.example/api/draft/selection", {
+    method: "PUT",
+    headers: { host: "evil.example", "content-type": "application/json" },
+    body: '{"selected":true}',
+  });
+  expect(response.status).toBe(403);
+});
+
+const INTENT = "  # Painel de açaí 🍇\n\n\t* Para quem vende na feira.\n`rápido` & simples  \n";
+
+async function readIntent(app: ReturnType<typeof makeApp>): Promise<string> {
+  const response = await localRequest(app, "/api/draft");
+  expect(response.status).toBe(200);
+  return IntentSchema.parse(await response.json()).intent;
+}
+
+test("CA-2.4 PUT /api/draft/intent stores the text and GET /api/draft returns it unchanged", async () => {
+  const app = makeApp();
+  expect(await readIntent(app)).toBe("");
+  const response = await put(app, "/api/draft/intent", JSON.stringify({ intent: INTENT }));
+  expect(response.status).toBe(204);
+  expect(await readIntent(app)).toBe(INTENT);
+});
+
+test("PUT /api/draft/intent takes 10 000 characters and refuses 10 001", async () => {
+  const app = makeApp();
+  const ok = "x".repeat(MAX_INTENT_LENGTH);
+  expect((await put(app, "/api/draft/intent", JSON.stringify({ intent: ok }))).status).toBe(204);
+  const refused = await put(
+    app,
+    "/api/draft/intent",
+    JSON.stringify({ intent: "x".repeat(MAX_INTENT_LENGTH + 1) }),
+  );
+  expect(refused.status).toBe(400);
+  expect(ErrorSchema.parse(await refused.json()).error.code).toBe("invalid-request");
+  expect(await readIntent(app)).toBe(ok);
+});
+
+test("PUT /api/draft/intent answers 400 invalid-request for a wrong body", async () => {
+  const app = makeApp();
+  for (const body of ["{}", '{"intent":5}', "not json"]) {
+    const response = await put(app, "/api/draft/intent", body);
+    expect(response.status).toBe(400);
+    expect(ErrorSchema.parse(await response.json()).error.code).toBe("invalid-request");
+  }
+  expect(await readIntent(app)).toBe("");
+});
+
+test("PUT /api/draft/intent answers 413 too-large above 128 KiB", async () => {
+  const app = makeApp();
+  const response = await put(app, "/api/draft/intent", "x".repeat(128 * 1024 + 1));
+  expect(response.status).toBe(413);
+  expect(ErrorSchema.parse(await response.json()).error.code).toBe("too-large");
+});
+
+test("CA-0.11 the intent routes are behind the local-only guard", async () => {
+  const app = makeApp();
+  const get = await app.request("http://evil.example/api/draft", {
+    headers: { host: "evil.example" },
+  });
+  expect(get.status).toBe(403);
+  const response = await app.request("http://evil.example/api/draft/intent", {
+    method: "PUT",
+    headers: { host: "evil.example", "content-type": "application/json" },
+    body: '{"intent":"x"}',
+  });
+  expect(response.status).toBe(403);
 });

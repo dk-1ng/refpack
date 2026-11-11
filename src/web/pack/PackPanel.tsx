@@ -4,9 +4,17 @@ import { type Notice, useI18n } from "../i18n/index.tsx";
 
 export function PackPanel({
   imageCount,
+  selectedCount,
+  canStartOver,
+  onStartOver,
+  beforeGenerate,
   onFailed,
 }: {
   imageCount: number;
+  selectedCount: number;
+  canStartOver: boolean;
+  onStartOver: () => void;
+  beforeGenerate: () => Promise<boolean>;
   onFailed: (notice: Notice) => void;
 }) {
   const { t } = useI18n();
@@ -14,6 +22,10 @@ export function PackPanel({
   const [copied, setCopied] = useState(false);
 
   async function generate(): Promise<void> {
+    if (!(await beforeGenerate())) {
+      onFailed({ key: "error.notSaved" });
+      return;
+    }
     const result = await createPack();
     if (result.ok) {
       setPath(result.pack.path);
@@ -35,10 +47,16 @@ export function PackPanel({
 
   return (
     <section className="pack-panel">
-      <button type="button" disabled={imageCount === 0} onClick={() => void generate()}>
+      <button type="button" disabled={selectedCount === 0} onClick={() => void generate()}>
         {t("pack.generate")}
+      </button>{" "}
+      <button type="button" disabled={!canStartOver} onClick={onStartOver}>
+        {t("pack.startOver")}
       </button>
       {imageCount === 0 ? <span className="pack-hint">{t("pack.disabledHint")}</span> : null}
+      {imageCount > 0 && selectedCount === 0 ? (
+        <span className="pack-hint">{t("pack.selectHint")}</span>
+      ) : null}
       {path !== null ? (
         <p className="pack-result">
           {t("pack.created")} <code>{path}</code>{" "}
