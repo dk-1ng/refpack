@@ -19,14 +19,6 @@ Só a próxima fatia é detalhada (critérios de aceite no `SPEC.md`, tarefas em
 | 8 | Famílias | Receber famílias estéticas propostas pela IA, aprovar, renomear ou desfazer, e montar um pacote a partir de uma delas. | roteiro |
 | 9 | Retorno | Guardar o resultado que o agente gerou, anotar o que acertou e errou, e promovê-lo a referência. | roteiro |
 
-## Entram como critérios na próxima fatia
-
-Decisão do dono ao aprovar a fatia 3. O arquiteto escreve os critérios no `SPEC.md` ao planejar a fatia 4.
-
-- Uma imagem colada ou solta logo que a tela abre, antes de a lista carregar, aparece uma vez só na grade.
-- O teste do CA-0.3 espera as imagens carregarem antes de medi-las, sem falhar de vez em quando no CI.
-- Quando a tela e o servidor estão em versões diferentes (refpack atualizado sem reiniciar), a tela avisa em vez de mostrar a grade vazia.
-
 ## Depois
 
 Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só por decisão do dono.

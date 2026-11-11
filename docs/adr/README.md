@@ -24,3 +24,4 @@ Regras:
 | [0012](0012-salvamento-automatico.md) | Salvamento automático: na hora, um de cada vez, e a tela só mostra o que foi confirmado | Aceito |
 | [0013](0013-nota-da-imagem.md) | A nota fica no registro da imagem e sai no pacote em `notes/NN.md` | Aceito |
 | [0014](0014-imagem-aberta-em-dialogo-do-navegador.md) | A imagem aberta usa o diálogo do próprio navegador | Aceito |
+| [0015](0015-marcacoes.md) | Marcações em tabela própria; o recorte é feito pelo navegador na hora de marcar | Aceito |
