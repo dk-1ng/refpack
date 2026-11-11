@@ -10,8 +10,8 @@ Só a próxima fatia é detalhada (critérios de aceite no `SPEC.md`, tarefas em
 | --- | --- | --- | --- |
 | 0 | Walking skeleton | Abrir o refpack, adicionar uma imagem, vê-la na tela e gerar uma pasta-pacote que o Claude Code lê. | feita |
 | 1 | Colar e arrastar | Colar um screenshot da área de transferência e arrastar arquivos para a tela; eles entram na biblioteca como os escolhidos pelo botão. | feita |
-| 2 | Escolher e dizer a intenção | Escolher quais imagens entram no pacote e escrever a intenção do projeto, que sai no pacote. | próxima |
-| 3 | Nota geral | Escrever uma nota em cada imagem; ela salva sozinha, fica exatamente como escrevi e sai no pacote. | roteiro |
+| 2 | Escolher e dizer a intenção | Escolher quais imagens entram no pacote e escrever a intenção do projeto, que sai no pacote. | feita |
+| 3 | Nota geral | Escrever uma nota em cada imagem; ela salva sozinha, fica exatamente como escrevi e sai no pacote. | próxima |
 | 4 | Marcar partes | Marcar áreas de uma imagem com "gosto" ou "não gosto" e um comentário; o pacote traz o recorte de cada marcação. | roteiro |
 | 5 | Etiquetas | Etiquetar imagens e filtrar a grade por etiqueta. | roteiro |
 | 6 | Entrada em volume | Importar uma pasta inteira; a grade continua rápida com milhares de imagens. | roteiro |
@@ -37,3 +37,8 @@ Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só 
 - Limpeza técnica: conferir com zod o nome original do arquivo que chega junto com a imagem.
 - Rodar `pnpm start` com o refpack já aberto mostra só o aviso, sem a linha de erro do pnpm depois dele.
 - Avisos que somem sozinhos ou têm botão de fechar. Hoje eles se acumulam até recarregar a página.
+- Reordenar as imagens arrastando na grade.
+- Arrastar um texto e soltar na caixa da intenção põe o texto na caixa, sem o aviso de "não havia imagem para adicionar".
+- Colar na caixa da intenção algo que traz texto e imagem juntos (por exemplo, células de uma planilha) põe o texto na caixa.
+- "Gerar pacote" com o refpack parado mostra o aviso de que não foi possível salvar, em vez de "Algo deu errado".
+- Depois de "Começar outro pacote", o caminho do último pacote gerado deixa de aparecer na tela.
