@@ -32,6 +32,8 @@ export const ptBR = {
   "error.notSaved": "Não foi possível salvar. Confira se o refpack ainda está rodando no terminal.",
   "error.unsupportedType": "{name}: tipo não aceito. Use PNG, JPEG ou WebP.",
   "error.tooLarge": "{name}: passa de 25 MB.",
+  "error.versionMismatch":
+    "A tela e o refpack estão em versões diferentes. Pare o refpack no terminal e rode pnpm start de novo.",
   "error.generic": "Algo deu errado. Tente de novo.",
   "error.nothingToPaste": "Não havia imagem para colar.",
   "error.nothingToAdd": "Não havia imagem para adicionar.",

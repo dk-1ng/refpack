@@ -33,6 +33,8 @@ export const en: Record<MessageKey, string> = {
   "error.notSaved": "Could not save. Check that refpack is still running in the terminal.",
   "error.unsupportedType": "{name}: unsupported type. Use PNG, JPEG or WebP.",
   "error.tooLarge": "{name}: larger than 25 MB.",
+  "error.versionMismatch":
+    "This screen and refpack are on different versions. Stop refpack in the terminal and run pnpm start again.",
   "error.generic": "Something went wrong. Try again.",
   "error.nothingToPaste": "There was no image to paste.",
   "error.nothingToAdd": "There was no image to add.",

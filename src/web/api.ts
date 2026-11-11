@@ -8,12 +8,21 @@ import {
   PackCreatedSchema,
 } from "../shared/api.ts";
 
-export async function fetchImages(): Promise<Image[]> {
+// null when the answer arrived but is not the list this screen expects: the running refpack
+// is another version (CA-4.13). Still throws when the status is not 2xx.
+export async function fetchImages(): Promise<Image[] | null> {
   const response = await fetch("/api/images");
   if (!response.ok) {
     throw new Error(`GET /api/images failed with status ${response.status}`);
   }
-  return ImageListSchema.parse(await response.json()).images;
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return null;
+  }
+  const parsed = ImageListSchema.safeParse(body);
+  return parsed.success ? parsed.data.images : null;
 }
 
 export type UploadResult =

@@ -94,13 +94,16 @@ export function App() {
     let cancelled = false;
     fetchImages().then(
       (loaded) => {
-        if (!cancelled) {
-          setImages((current) => {
-            if (current === null) return loaded;
-            const known = new Set(current.map((image) => image.id));
-            return [...current, ...loaded.filter((image) => !known.has(image.id))];
-          });
+        if (cancelled) return;
+        if (loaded === null) {
+          refuse({ key: "error.versionMismatch" });
+          return;
         }
+        setImages((current) => {
+          if (current === null) return loaded;
+          const known = new Set(current.map((image) => image.id));
+          return [...current, ...loaded.filter((image) => !known.has(image.id))];
+        });
       },
       () => {
         if (!cancelled) {
@@ -111,7 +114,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refuse]);
 
   return (
     <main>
