@@ -345,11 +345,113 @@ Os testes automáticos rodam no Chromium e no Firefox (ADR-0010). O teste manual
 - Desfazer o "Começar outro pacote".
 - Nota em cada imagem (fatia 3).
 
-## 9. Depois
+## 9. Fatia 3 — nota geral
+
+**O que eu consigo fazer ao final:** abrir uma imagem em tamanho grande, escrever uma nota sobre ela e passar para a seguinte; a nota se guarda sozinha, fica exatamente como escrevi e sai no pacote.
+
+O que vale para as fatias 0, 1 e 2 continua valendo, com as mudanças listadas em "O que muda nos critérios anteriores". Tudo o que não está listado abaixo fica fora desta fatia.
+
+### Definições desta fatia
+
+- **Nota:** um texto livre sobre uma imagem, numa caixa só, em que eu digo o que quero que o agente aproveite ou evite nela. É opcional. Tem até 10 000 caracteres; a caixa não aceita mais que isso.
+- **Nota vazia:** sem nenhum caractere, ou só com espaços e quebras de linha.
+- **A nota é da imagem**, não do pacote em montagem. Fica guardada com a imagem até eu mudá-la e vale para todos os pacotes em que a imagem entrar.
+- **Imagem aberta:** a imagem em tamanho grande, por cima da grade, com a caixa da nota ao lado. Só uma imagem fica aberta por vez.
+
+### Critérios de aceite
+
+**CA-3.1 Abrir uma imagem**
+- Dado que a grade tem imagens,
+- quando eu clico no botão "Nota" de uma imagem,
+- então ela abre em tamanho grande, inteira, sem cortes, com a caixa da nota ao lado trazendo a nota que essa imagem já tem.
+- O cursor já está na caixa da nota: eu posso começar a digitar sem clicar em nada.
+- Clicar no botão "Nota" não muda a seleção da imagem. Clicar na imagem, na grade, continua servindo para selecioná-la (CA-2.1).
+
+**CA-3.2 Escrever a nota**
+- Dado que uma imagem está aberta,
+- quando eu escrevo na caixa da nota,
+- então o texto é guardado sozinho, sem botão de salvar, e a tela mostra que foi guardado.
+- A caixa vazia mostra uma dica, na língua da tela, lembrando para que serve a nota: dizer o que aproveitar e o que evitar nesta imagem.
+- O texto fica exatamente como eu digitei: acentos, emojis, quebras de linha e espaços.
+
+**CA-3.3 Fechar a imagem**
+- Dado que uma imagem está aberta,
+- quando eu clico em "Fechar" ou aperto Esc,
+- então a imagem fecha e eu volto à grade, no mesmo ponto em que ela estava.
+- O que eu digitei até o instante de fechar fica guardado.
+
+**CA-3.4 Anterior e próxima**
+- Dado que uma imagem está aberta,
+- quando eu clico em "Próxima" ou em "Anterior",
+- então a imagem aberta passa a ser a seguinte ou a anterior, na ordem da grade, com a nota dela na caixa e o cursor na caixa.
+- O que eu digitei na imagem de que saí fica guardado.
+- Na primeira imagem da grade o botão "Anterior" está desativado; na última, o "Próxima".
+
+**CA-3.5 Sinal de nota na grade**
+- Dado que uma imagem tem nota que não está vazia,
+- quando eu olho a grade,
+- então essa imagem mostra um sinal pequeno de que tem nota; as imagens sem nota não mostram.
+- O sinal aparece ou some sem eu recarregar a página, conforme a nota passa a existir ou fica vazia.
+
+**CA-3.6 Fechar e voltar**
+- Dado que eu escrevi notas,
+- quando eu fecho o refpack e abro de novo,
+- então cada imagem traz a mesma nota, e a grade mostra os mesmos sinais.
+
+**CA-3.7 A nota sai no pacote**
+- Dado que uma imagem selecionada tem nota que não está vazia,
+- quando o pacote é gerado,
+- então ele traz, na pasta `notes/`, um arquivo com o mesmo número da imagem (`notes/01.md` para `refs/01.png`), com o meu texto exatamente como digitei e sem nada acrescentado.
+- O `README.md` mostra, na lista de referências, qual é o arquivo de nota de cada imagem que tem nota. Ele diz ao agente, em inglês, para ler a nota junto com a imagem, e avisa que o texto é do dono e pode estar em outra língua.
+- Imagem selecionada sem nota não ganha arquivo, e o `README.md` não fala de nota para ela. Se nenhuma imagem selecionada tem nota, o pacote não tem a pasta `notes/`.
+- A nota de uma imagem que não está selecionada não entra no pacote.
+- O que eu acabei de digitar na nota entra no pacote, mesmo que eu feche a imagem e clique em "Gerar pacote" logo em seguida.
+- No teste manual do dono, o Claude Code, ao ler a pasta, consegue dizer o que a nota de cada imagem pede.
+
+**CA-3.8 Começar outro pacote não apaga notas**
+- Dado que há imagens com nota,
+- quando eu clico em "Começar outro pacote" e confirmo,
+- então a seleção e a intenção ficam vazias, como no CA-2.10, e todas as notas continuam como estavam.
+
+**CA-3.9 A tela ficou aberta com o refpack parado**
+- Dado que eu parei o refpack no terminal e a tela continuou aberta no navegador, com uma imagem aberta,
+- quando eu escrevo na nota,
+- então a tela avisa, na língua da tela, que não conseguiu guardar; o texto que eu digitei continua na caixa, sem a indicação de guardado, para eu poder copiá-lo.
+- Se, com esse texto ainda não guardado, eu tento fechar a imagem ou passar para outra, a tela pergunta antes se eu quero sair sem guardar. Se eu cancelo, a imagem continua aberta com o texto na caixa.
+
+**CA-3.10 Colar e soltar com uma imagem aberta**
+- Dado que uma imagem está aberta,
+- quando eu colo um texto com o cursor na caixa da nota, ele entra na caixa, como em qualquer campo de texto, e nenhum aviso aparece;
+- quando eu colo uma imagem ou arquivos, ou solto qualquer coisa na tela, nada é adicionado à biblioteca e nenhum aviso aparece; o texto da nota não muda e a tela do refpack continua aberta, sem ser trocada por outra página.
+- Para adicionar imagens, eu fecho a imagem aberta antes.
+
+### O que muda nos critérios anteriores
+
+- **CA-0.7 e CA-2.6:** além das imagens e da intenção, o pacote leva as notas das imagens selecionadas (CA-3.7).
+- **CA-2.10:** "Começar outro pacote" não apaga notas (CA-3.8).
+- **CA-1.2 a CA-1.8 e CA-2.12:** colar e soltar não adicionam imagens enquanto uma imagem está aberta; ali vale o CA-3.10.
+
+### Como estes critérios são conferidos
+
+Os testes automáticos rodam no Chromium e no Firefox (ADR-0010). O teste manual do dono é feito no Firefox e termina pedindo ao Claude Code que leia o pacote gerado.
+
+### Fora desta fatia, de propósito
+
+- Marcar partes da imagem (fatia 4) e etiquetas (fatia 5).
+- Selecionar ou tirar da seleção com a imagem aberta: a seleção continua sendo feita na grade.
+- Passar de imagem pelas setas do teclado: na caixa da nota elas movem o cursor.
+- Ampliar a imagem aberta além do tamanho da tela (zoom).
+- Fechar a imagem clicando fora dela.
+- Ler a nota na grade sem abrir a imagem.
+- Formatação na nota (negrito, listas): é texto simples.
+- Buscar ou filtrar imagens pelo texto da nota.
+- Adicionar imagens com uma imagem aberta (CA-3.10).
+
+## 10. Depois
 
 O que é parte da visão mas não cabe na fatia atual vai para a lista "Depois", que vive em um lugar só: o `ROADMAP.md`. Nada dessa lista é construído sem antes virar fatia, por decisão do dono.
 
-## 10. Fora do escopo
+## 11. Fora do escopo
 
 - Contas, login, nuvem, vários usuários.
 - Celular.
