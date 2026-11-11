@@ -56,6 +56,14 @@ export function createPack(library: Library, now: Date): PackResult {
     copyFileSync(join(library.imagesDir, image.fileName), join(path, "refs", refName));
     return refName;
   });
+  const notedImages = images.filter((image) => image.note.trim() !== "");
+  if (notedImages.length > 0) {
+    mkdirSync(join(path, "notes"));
+    for (const image of notedImages) {
+      const number = refNames[images.indexOf(image)]?.split(".")[0] ?? "";
+      writeFileSync(join(path, "notes", `${number}.md`), image.note);
+    }
+  }
   writeFileSync(join(path, ".gitignore"), "*\n");
   const created = `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())} ${two(now.getHours())}:${two(now.getMinutes())}:${two(now.getSeconds())}`;
   const intent = getIntent(library);
@@ -72,13 +80,23 @@ export function createPack(library: Library, now: Date): PackResult {
           "Read `INTENT.md` before you look at the references. It says what is being built, for whom, and what they need to be able to do. It is in the owner's own words and may be in a language other than English.",
         ]
       : []),
+    ...(notedImages.length > 0
+      ? [
+          "",
+          "Some references have a note from the owner, shown next to the image in the list below. Read each note together with its image: it says what to take from that reference and what to avoid. The notes are in the owner's own words and may be in a language other than English.",
+        ]
+      : []),
     "",
     `- Created: ${created}`,
     `- References: ${images.length}`,
     "",
     "## References",
     "",
-    ...refNames.map((name, index) => `${index + 1}. \`refs/${name}\``),
+    ...refNames.map((name, index) => {
+      const line = `${index + 1}. \`refs/${name}\``;
+      if (images[index]?.note.trim() === "") return line;
+      return `${line} — note: \`notes/${name.split(".")[0]}.md\``;
+    }),
     "",
   ].join("\n");
   writeFileSync(join(path, "README.md"), readme);

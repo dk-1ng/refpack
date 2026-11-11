@@ -6,6 +6,7 @@ import { AddImages } from "./library/AddImages.tsx";
 import { ImageGrid } from "./library/ImageGrid.tsx";
 import { IncomingFiles } from "./library/IncomingFiles.tsx";
 import { SelectionBar } from "./library/SelectionBar.tsx";
+import { ImageViewer } from "./note/ImageViewer.tsx";
 import { IntentBox } from "./pack/IntentBox.tsx";
 import { PackPanel } from "./pack/PackPanel.tsx";
 import { useIntent } from "./pack/use-intent.ts";
@@ -14,7 +15,10 @@ export function App() {
   const { language, setLanguage, t } = useI18n();
   const [images, setImages] = useState<Image[] | null>(null);
   const [refusals, setRefusals] = useState<Notice[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
   const intent = useIntent();
+  const openIndex = images?.findIndex((image) => image.id === openId) ?? -1;
+  const openImage = images?.[openIndex] ?? null;
 
   const addImage = useCallback(
     (image: Image) => setImages((current) => [image, ...(current ?? [])]),
@@ -54,6 +58,16 @@ export function App() {
       );
     },
     [refuse],
+  );
+
+  const noteSaved = useCallback(
+    (id: string, note: string) =>
+      setImages((current) =>
+        current === null
+          ? current
+          : current.map((item) => (item.id === id ? { ...item, note } : item)),
+      ),
+    [],
   );
 
   const startOver = useCallback(async () => {
@@ -111,7 +125,7 @@ export function App() {
         </label>
       </header>
       <AddImages onAdded={addImage} onRefused={refuse} />
-      <IncomingFiles onAdded={addImage} onRefused={refuse} />
+      <IncomingFiles onAdded={addImage} onRefused={refuse} paused={openImage !== null} />
       <IntentBox text={intent.text} saveState={intent.saveState} onChange={intent.change} />
       <PackPanel
         imageCount={images?.length ?? 0}
@@ -140,8 +154,23 @@ export function App() {
             onSelectAll={() => selectAll(true)}
             onClear={() => selectAll(false)}
           />
-          <ImageGrid images={images} onToggle={toggle} />
+          <ImageGrid
+            images={images}
+            onToggle={toggle}
+            onOpenNote={(image) => setOpenId(image.id)}
+          />
         </>
+      ) : null}
+      {openImage !== null ? (
+        <ImageViewer
+          key={openImage.id}
+          image={openImage}
+          previousId={images?.[openIndex - 1]?.id ?? null}
+          nextId={images?.[openIndex + 1]?.id ?? null}
+          onOpen={setOpenId}
+          onClose={() => setOpenId(null)}
+          onSaved={noteSaved}
+        />
       ) : null}
     </main>
   );

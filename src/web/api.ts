@@ -109,3 +109,16 @@ export async function saveIntent(intent: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function saveNote(id: string, note: string): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/images/${encodeURIComponent(id)}/note`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ note }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}

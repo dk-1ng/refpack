@@ -8,6 +8,7 @@ import {
   IntentSchema,
   MAX_IMAGE_BYTES,
   MAX_INTENT_LENGTH,
+  MAX_NOTE_LENGTH,
   PackCreatedSchema,
 } from "../shared/api.ts";
 import { createApp } from "./app.ts";
@@ -232,6 +233,71 @@ test("CA-0.11 the intent routes are behind the local-only guard", async () => {
     method: "PUT",
     headers: { host: "evil.example", "content-type": "application/json" },
     body: '{"intent":"x"}',
+  });
+  expect(response.status).toBe(403);
+});
+
+const NOTE = "  # Gosto do espaçamento 🍇\n\n\t* evitar o `azul` & a sombra  \n";
+
+async function notes(app: ReturnType<typeof makeApp>): Promise<string[]> {
+  const listed = ImageListSchema.parse(await (await localRequest(app, "/api/images")).json());
+  return listed.images.map((image) => image.note);
+}
+
+test("CA-3.2 PUT /api/images/:id/note stores the text and GET /api/images returns it unchanged", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  expect(image.note).toBe("");
+  const response = await put(app, `/api/images/${image.id}/note`, JSON.stringify({ note: NOTE }));
+  expect(response.status).toBe(204);
+  expect(await notes(app)).toEqual([NOTE]);
+});
+
+test("PUT /api/images/:id/note takes 10 000 characters and refuses 10 001", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  const path = `/api/images/${image.id}/note`;
+  const ok = "x".repeat(MAX_NOTE_LENGTH);
+  expect((await put(app, path, JSON.stringify({ note: ok }))).status).toBe(204);
+  const refused = await put(app, path, JSON.stringify({ note: `${ok}x` }));
+  expect(refused.status).toBe(400);
+  expect(ErrorSchema.parse(await refused.json()).error.code).toBe("invalid-request");
+  expect(await notes(app)).toEqual([ok]);
+});
+
+test("PUT /api/images/:id/note answers 404 not-found for an unknown or malformed id", async () => {
+  const app = makeApp();
+  for (const id of [UNKNOWN_ID, "not-a-uuid"]) {
+    const response = await put(app, `/api/images/${id}/note`, JSON.stringify({ note: "x" }));
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: { code: "not-found" } });
+  }
+});
+
+test("PUT /api/images/:id/note answers 400 invalid-request for a wrong body", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  for (const body of ["{}", '{"note":5}', "not json"]) {
+    const response = await put(app, `/api/images/${image.id}/note`, body);
+    expect(response.status).toBe(400);
+    expect(ErrorSchema.parse(await response.json()).error.code).toBe("invalid-request");
+  }
+  expect(await notes(app)).toEqual([""]);
+});
+
+test("PUT /api/images/:id/note answers 413 too-large above 128 KiB", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  const response = await put(app, `/api/images/${image.id}/note`, "x".repeat(128 * 1024 + 1));
+  expect(response.status).toBe(413);
+  expect(ErrorSchema.parse(await response.json()).error.code).toBe("too-large");
+});
+
+test("CA-0.11 the note route is behind the local-only guard", async () => {
+  const response = await makeApp().request(`http://evil.example/api/images/${UNKNOWN_ID}/note`, {
+    method: "PUT",
+    headers: { host: "evil.example", "content-type": "application/json" },
+    body: '{"note":"x"}',
   });
   expect(response.status).toBe(403);
 });

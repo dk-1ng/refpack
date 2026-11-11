@@ -10,14 +10,22 @@ import {
   type Image,
   IntentSchema,
   MAX_IMAGE_BYTES,
+  NoteSchema,
   SelectedBodySchema,
 } from "../shared/api.ts";
 import { getIntent, setAllSelected, setIntent, setSelected } from "./draft.ts";
 import { localOnly } from "./guard.ts";
-import { addImage, findImage, type Library, listImages, type StoredImage } from "./library.ts";
+import {
+  addImage,
+  findImage,
+  type Library,
+  listImages,
+  type StoredImage,
+  setNote,
+} from "./library.ts";
 import { createPack } from "./pack.ts";
 
-const MAX_INTENT_REQUEST_BYTES = 128 * 1024;
+const MAX_TEXT_REQUEST_BYTES = 128 * 1024;
 
 export type AppDeps = {
   webDir: string;
@@ -35,6 +43,7 @@ function toImage(image: StoredImage): Image {
     originalName: image.originalName,
     url: `/api/images/${image.id}/file`,
     selected: image.selected,
+    note: image.note,
   };
 }
 
@@ -98,6 +107,28 @@ export function createApp(deps: AppDeps): Hono {
     return c.body(null, 204);
   });
 
+  app.put(
+    "/api/images/:id/note",
+    bodyLimit({
+      maxSize: MAX_TEXT_REQUEST_BYTES,
+      onError: (c) => c.json(errorBody("too-large"), 413),
+    }),
+    async (c) => {
+      let body: unknown;
+      try {
+        body = await c.req.json();
+      } catch {
+        return c.json(errorBody("invalid-request"), 400);
+      }
+      const parsed = NoteSchema.safeParse(body);
+      if (!parsed.success) return c.json(errorBody("invalid-request"), 400);
+      if (!setNote(library, c.req.param("id"), parsed.data.note)) {
+        return c.json(errorBody("not-found"), 404);
+      }
+      return c.body(null, 204);
+    },
+  );
+
   app.put("/api/draft/selection", async (c) => {
     const selected = await readSelectedBody(c.req.raw);
     if (selected === null) return c.json(errorBody("invalid-request"), 400);
@@ -110,7 +141,7 @@ export function createApp(deps: AppDeps): Hono {
   app.put(
     "/api/draft/intent",
     bodyLimit({
-      maxSize: MAX_INTENT_REQUEST_BYTES,
+      maxSize: MAX_TEXT_REQUEST_BYTES,
       onError: (c) => c.json(errorBody("too-large"), 413),
     }),
     async (c) => {

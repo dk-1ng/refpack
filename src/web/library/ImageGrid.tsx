@@ -1,12 +1,16 @@
 import type { Image } from "../../shared/api.ts";
+import { useI18n } from "../i18n/index.tsx";
 
 export function ImageGrid({
   images,
   onToggle,
+  onOpenNote,
 }: {
   images: Image[];
   onToggle: (image: Image) => void;
+  onOpenNote: (image: Image) => void;
 }) {
+  const { t } = useI18n();
   return (
     <ul className="image-grid">
       {images.map((image) => (
@@ -15,6 +19,10 @@ export function ImageGrid({
             <input type="checkbox" checked={image.selected} onChange={() => onToggle(image)} />
             <img src={image.url} alt={image.originalName} draggable={false} />
           </label>
+          <button type="button" className="note-button" onClick={() => onOpenNote(image)}>
+            {t("note.open")}
+            {image.note.trim() !== "" ? <span className="note-mark" title={t("note.has")} /> : null}
+          </button>
         </li>
       ))}
     </ul>
