@@ -3,14 +3,16 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, expect, test } from "vitest";
 import { MAX_IMAGE_BYTES } from "../shared/api.ts";
-import { getIntent } from "./draft.ts";
+import { getIntent, setAllSelected, setSelected } from "./draft.ts";
 import {
   addImage,
   closeLibrary,
+  findImage,
   type Library,
   listImages,
   openLibrary,
   resolveLibraryRoot,
+  setNote,
 } from "./library.ts";
 import { JPEG_BYTES, PNG_BYTES, tempLibraryRoot, WEBP_BYTES } from "./test-support.ts";
 
@@ -115,7 +117,78 @@ test("CA-0.6 a library created before slice 2 opens with every image unselected"
       mimeType: "image/png",
       fileName: "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f.png",
       selected: false,
+      note: "",
     },
   ]);
   expect(getIntent(library)).toBe("");
+});
+
+const NOTE = "  # Gosto do espaçamento 🍇\n\n\t* evitar o `azul` & a sombra  \n";
+
+function twoImages(library: Library) {
+  const a = addImage(library, { bytes: PNG_BYTES, originalName: "a.png" });
+  const b = addImage(library, { bytes: JPEG_BYTES, originalName: "b.jpg" });
+  if (!a.ok || !b.ok) throw new Error("setup failed");
+  return { a: a.image, b: b.image };
+}
+
+test("CA-0.6 a library created before slice 3 opens with empty notes and keeps selection and intent", () => {
+  const root = tempLibraryRoot();
+  mkdirSync(join(root, "images"), { recursive: true });
+  const old = new DatabaseSync(join(root, "library.db"));
+  for (const name of ["001-images.sql", "002-image-selected.sql", "003-pack-draft.sql"]) {
+    old.exec(readFileSync(join(import.meta.dirname, "migrations", name), "utf8"));
+  }
+  old.exec("PRAGMA user_version = 3");
+  old
+    .prepare("INSERT INTO images (id, original_name, mime_type, selected) VALUES (?, ?, ?, 1)")
+    .run("3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f", "antiga.png", "image/png");
+  old.exec("UPDATE pack_draft SET intent = 'antiga'");
+  old.close();
+  const library = open(root);
+  expect(listImages(library)).toEqual([
+    {
+      id: "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f",
+      originalName: "antiga.png",
+      mimeType: "image/png",
+      fileName: "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f.png",
+      selected: true,
+      note: "",
+    },
+  ]);
+  expect(getIntent(library)).toBe("antiga");
+});
+
+test("CA-3.2 setNote stores the text exactly as given", () => {
+  const library = open(tempLibraryRoot());
+  const { b } = twoImages(library);
+  expect(setNote(library, b.id, NOTE)).toBe(true);
+  expect(listImages(library).map((image) => image.note)).toEqual([NOTE, ""]);
+  expect(findImage(library, b.id)?.note).toBe(NOTE);
+});
+
+test("setNote answers false for an unknown id and changes nothing", () => {
+  const library = open(tempLibraryRoot());
+  twoImages(library);
+  expect(setNote(library, "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f", NOTE)).toBe(false);
+  expect(listImages(library).map((image) => image.note)).toEqual(["", ""]);
+});
+
+test("CA-3.6 the notes are still there after closing and reopening the library", () => {
+  const root = tempLibraryRoot();
+  const first = open(root);
+  const { b } = twoImages(first);
+  setNote(first, b.id, NOTE);
+  closeLibrary(first);
+  const second = open(root);
+  expect(listImages(second).map((image) => image.note)).toEqual([NOTE, ""]);
+});
+
+test("CA-3.8 clearing the selection keeps every note", () => {
+  const library = open(tempLibraryRoot());
+  const { a } = twoImages(library);
+  setNote(library, a.id, NOTE);
+  setSelected(library, a.id, true);
+  setAllSelected(library, false);
+  expect(findImage(library, a.id)?.note).toBe(NOTE);
 });

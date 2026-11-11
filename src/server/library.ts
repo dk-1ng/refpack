@@ -13,6 +13,7 @@ export type StoredImage = {
   mimeType: ImageType["mimeType"];
   fileName: string;
   selected: boolean;
+  note: string;
 };
 
 const migrationsDir = join(import.meta.dirname, "migrations");
@@ -22,6 +23,7 @@ const ImageRowSchema = z.object({
   original_name: z.string(),
   mime_type: z.enum(["image/png", "image/jpeg", "image/webp"]),
   selected: z.union([z.literal(0), z.literal(1)]),
+  note: z.string(),
 });
 
 const extensionByMimeType: Record<ImageType["mimeType"], ImageType["extension"]> = {
@@ -76,6 +78,7 @@ function toStoredImage(row: unknown): StoredImage {
     mimeType: parsed.mime_type,
     fileName: `${parsed.id}.${extensionByMimeType[parsed.mime_type]}`,
     selected: parsed.selected === 1,
+    note: parsed.note,
   };
 }
 
@@ -104,20 +107,28 @@ export function addImage(
       mimeType: type.mimeType,
       fileName,
       selected: false,
+      note: "",
     },
   };
 }
 
 export function listImages(library: Library): StoredImage[] {
   const rows = library.db
-    .prepare("SELECT id, original_name, mime_type, selected FROM images ORDER BY seq DESC")
+    .prepare("SELECT id, original_name, mime_type, selected, note FROM images ORDER BY seq DESC")
     .all();
   return rows.map(toStoredImage);
 }
 
 export function findImage(library: Library, id: string): StoredImage | null {
   const row = library.db
-    .prepare("SELECT id, original_name, mime_type, selected FROM images WHERE id = ?")
+    .prepare("SELECT id, original_name, mime_type, selected, note FROM images WHERE id = ?")
     .get(id);
   return row === undefined ? null : toStoredImage(row);
+}
+
+// False when no image has this id; nothing changes then.
+// The text is stored exactly as given: no trimming, no normalization.
+export function setNote(library: Library, id: string, note: string): boolean {
+  const result = library.db.prepare("UPDATE images SET note = ? WHERE id = ?").run(note, id);
+  return Number(result.changes) > 0;
 }
