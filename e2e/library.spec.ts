@@ -28,7 +28,7 @@ function gridAlts(page: Page): Promise<string[]> {
     .evaluateAll((imgs) => imgs.map((i) => i.getAttribute("alt") ?? ""));
 }
 
-test("CA-0.3 chosen images appear in the grid, newest first, without reloading", async ({
+test("CA-0.3 CA-4.14 chosen images appear in the grid, newest first, without reloading", async ({
   page,
   app,
 }) => {
@@ -42,10 +42,11 @@ test("CA-0.3 chosen images appear in the grid, newest first, without reloading",
   const images = page.getByRole("list").getByRole("img");
   await expect(images).toHaveCount(3);
   expect(await gridAlts(page)).toEqual(["c.webp", "b.jpg", "a.png"]);
-  const widths = await images.evaluateAll((imgs) =>
-    imgs.map((i) => (i as HTMLImageElement).naturalWidth),
-  );
-  for (const width of widths) expect(width).toBeGreaterThan(0);
+  for (const image of await images.all()) {
+    await expect
+      .poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth))
+      .toBeGreaterThan(0);
+  }
   await expect(page.getByText("Your library is empty. Add your first image.")).toHaveCount(0);
 });
 
