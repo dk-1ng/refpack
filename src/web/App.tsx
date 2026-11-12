@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Image } from "../shared/api.ts";
+import type { Image, Mark } from "../shared/api.ts";
 import { fetchImages, setAllSelected, setImageSelected } from "./api.ts";
 import { LANGUAGES, type Language, type Notice, useI18n } from "./i18n/index.tsx";
 import { AddImages } from "./library/AddImages.tsx";
@@ -66,6 +66,16 @@ export function App() {
         current === null
           ? current
           : current.map((item) => (item.id === id ? { ...item, note } : item)),
+      ),
+    [],
+  );
+
+  const marksChanged = useCallback(
+    (id: string, change: (marks: Mark[]) => Mark[]) =>
+      setImages((current) =>
+        current === null
+          ? current
+          : current.map((item) => (item.id === id ? { ...item, marks: change(item.marks) } : item)),
       ),
     [],
   );
@@ -177,6 +187,7 @@ export function App() {
           onOpen={setOpenId}
           onClose={() => setOpenId(null)}
           onSaved={noteSaved}
+          onMarks={marksChanged}
         />
       ) : null}
     </main>

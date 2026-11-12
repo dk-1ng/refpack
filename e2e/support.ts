@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test as base, type JSHandle, type Locator, type Page } from "@playwright/test";
@@ -143,7 +143,10 @@ export async function makeImageFile(
 export type FakeFile = {
   name: string;
   content: "image/png" | "image/jpeg" | "image/webp" | "text";
+  width?: number; // default 8
+  height?: number; // default 8
 };
+// The fake image keeps its pattern at any size: blue, with the top-left quarter yellow.
 
 // Builds, inside the page, what a paste or a drop carries.
 async function makeDataTransfer(
@@ -154,20 +157,20 @@ async function makeDataTransfer(
   return page.evaluateHandle(
     async ({ files, text }) => {
       const data = new DataTransfer();
-      for (const { name, content } of files) {
+      for (const { name, content, width = 8, height = 8 } of files) {
         if (content === "text") {
           data.items.add(new File(["just some text, not an image"], name, { type: "text/plain" }));
           continue;
         }
         const canvas = document.createElement("canvas");
-        canvas.width = 8;
-        canvas.height = 8;
+        canvas.width = width;
+        canvas.height = height;
         const context = canvas.getContext("2d");
         if (context === null) throw new Error("no 2d context");
         context.fillStyle = "#3366cc";
-        context.fillRect(0, 0, 8, 8);
+        context.fillRect(0, 0, width, height);
         context.fillStyle = "#ffcc00";
-        context.fillRect(0, 0, 4, 4);
+        context.fillRect(0, 0, width / 2, height / 2);
         const blob = await new Promise<Blob | null>((resolveBlob) =>
           canvas.toBlob(resolveBlob, content),
         );
@@ -212,6 +215,34 @@ export async function drop(page: Page, files: FakeFile[], text?: string): Promis
   await target.dispatchEvent("dragenter", { dataTransfer });
   await target.dispatchEvent("dragover", { dataTransfer });
   await target.dispatchEvent("drop", { dataTransfer });
+}
+
+// Decodes a PNG file inside the page: its size and the colour of each asked pixel, as "#rrggbb".
+export async function readPng(
+  page: Page,
+  path: string,
+  points: [number, number][],
+): Promise<{ width: number; height: number; colors: string[] }> {
+  const base64 = (await readFile(path)).toString("base64");
+  return page.evaluate(
+    async ({ base64, points }) => {
+      const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+      const bitmap = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext("2d");
+      if (context === null) throw new Error("no 2d context");
+      context.drawImage(bitmap, 0, 0);
+      const hex = (value: number) => value.toString(16).padStart(2, "0");
+      const colors = points.map(([x, y]) => {
+        const [r = 0, g = 0, b = 0] = context.getImageData(x, y, 1, 1).data;
+        return `#${hex(r)}${hex(g)}${hex(b)}`;
+      });
+      return { width: bitmap.width, height: bitmap.height, colors };
+    },
+    { base64, points },
+  );
 }
 
 // A real drop of files and folders from disk. Chromium only (ADR-0010).

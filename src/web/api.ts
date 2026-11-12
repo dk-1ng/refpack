@@ -1,9 +1,13 @@
 import {
+  type Area,
   ErrorSchema,
   type Image,
   ImageListSchema,
   ImageSchema,
   IntentSchema,
+  type Mark,
+  type MarkKind,
+  MarkSchema,
   type PackCreated,
   PackCreatedSchema,
 } from "../shared/api.ts";
@@ -129,5 +133,34 @@ export async function saveNote(id: string, note: string): Promise<boolean> {
     return response.ok;
   } catch {
     return false;
+  }
+}
+
+// The area goes in the address and the crop, a PNG, is the body. null when the mark was not
+// created: any status that is not 2xx, an answer that is not a mark, or a network error.
+export async function createMark(
+  imageId: string,
+  kind: MarkKind,
+  area: Area,
+  crop: Blob,
+): Promise<Mark | null> {
+  try {
+    const query = new URLSearchParams({
+      kind,
+      left: String(area.left),
+      top: String(area.top),
+      right: String(area.right),
+      bottom: String(area.bottom),
+    });
+    const response = await fetch(`/api/images/${encodeURIComponent(imageId)}/marks?${query}`, {
+      method: "POST",
+      headers: { "content-type": "image/png" },
+      body: crop,
+    });
+    if (!response.ok) return null;
+    const parsed = MarkSchema.safeParse(await response.json());
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
   }
 }
