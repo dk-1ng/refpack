@@ -69,8 +69,11 @@ test("CA-2.4 CA-2.5 the intent comes back exactly as typed after closing and ope
   await expect(intent(page)).toHaveValue(TEXT);
 });
 
-test("CA-2.4 text typed key by key is saved whole and in order", async ({ page, app }) => {
+test("CA-2.4 CA-4.16 text typed key by key is saved whole and in order", async ({ page, app }) => {
   await page.goto(app.url);
+  // The box stays disabled until the saved intent has loaded, and pressing keys does not
+  // wait for that the way fill does: keys typed earlier land nowhere.
+  await expect(intent(page)).toBeEnabled();
   await intent(page).pressSequentially("hello world");
   await expect(status(page)).toHaveText("Saved");
   await page.reload();
