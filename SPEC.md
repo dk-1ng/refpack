@@ -564,6 +564,13 @@ O que vale para as fatias 0 a 3 continua valendo, com as mudanças listadas em "
 - então o teste "o mesmo arquivo adicionado duas vezes aparece duas vezes" passa sempre no Firefox, também com a máquina lenta. A causa da falha de vez em quando é encontrada e corrigida, sem tratamento especial por navegador.
 - É conferido pelo CI, não na tela.
 
+**CA-4.16 Os testes do pacote e da intenção não falham à toa**
+- Dado o código da fatia,
+- quando o CI roda,
+- então os testes unitários que gravam arquivos têm tempo para terminar também na máquina Windows lenta, com o mesmo limite em todos os sistemas (ADR-0016);
+- e o teste "texto digitado tecla a tecla é salvo inteiro e em ordem" (CA-2.4) passa sempre, também com a máquina lenta. A causa da falha de vez em quando é encontrada; se for um defeito da tela, ele é corrigido.
+- É conferido pelo CI, não na tela.
+
 ### O que muda nos critérios anteriores
 
 - **CA-3.1:** o botão de cada imagem na grade passa a se chamar "Anotar" (em inglês, "Annotate"), porque agora abre a imagem para a nota e para as marcações.

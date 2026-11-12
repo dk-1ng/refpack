@@ -25,3 +25,4 @@ Regras:
 | [0013](0013-nota-da-imagem.md) | A nota fica no registro da imagem e sai no pacote em `notes/NN.md` | Aceito |
 | [0014](0014-imagem-aberta-em-dialogo-do-navegador.md) | A imagem aberta usa o diálogo do próprio navegador | Aceito |
 | [0015](0015-marcacoes.md) | Marcações em tabela própria; o recorte é feito pelo navegador na hora de marcar | Aceito |
+| [0016](0016-tempo-limite-dos-testes-unitarios.md) | Tempo limite de 20 segundos para cada teste unitário, igual em todos os sistemas | Aceito |
