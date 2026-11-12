@@ -10,6 +10,7 @@ import {
   openLibrary,
   setNote,
 } from "./library.ts";
+import { addMark, deleteMark, listMarks, setMarkComment } from "./marks.ts";
 import { createPack, packFolderName, refNumber } from "./pack.ts";
 import { JPEG_BYTES, PNG_BYTES, tempLibraryRoot, WEBP_BYTES } from "./test-support.ts";
 
@@ -94,10 +95,25 @@ test("CA-0.9 CA-2.9 generating a pack leaves the library unchanged", () => {
   const library = makeLibrary();
   fillLibrary(library);
   setAllSelected(library, true);
-  setNote(library, listImages(library)[1]?.id ?? "", "a note on b");
-  const before = { images: listImages(library), files: readdirSync(library.imagesDir).sort() };
+  const bId = listImages(library)[1]?.id ?? "";
+  setNote(library, bId, "a note on b");
+  const added = addMark(library, bId, {
+    kind: "like",
+    area: { left: 0.1, top: 0.2, right: 0.4, bottom: 0.9 },
+    crop: new Uint8Array([...PNG_BYTES, 1]),
+  });
+  if (!added.ok) throw new Error("expected ok");
+  setMarkComment(library, added.mark.id, "a comment on a mark");
+  const before = {
+    images: listImages(library),
+    marks: listMarks(library),
+    files: readdirSync(library.imagesDir).sort(),
+    crops: readdirSync(library.marksDir).sort(),
+  };
   createPack(library, now);
   expect(listImages(library)).toEqual(before.images);
+  expect(listMarks(library)).toEqual(before.marks);
+  expect(readdirSync(library.marksDir).sort()).toEqual(before.crops);
   expect(readdirSync(library.imagesDir).sort()).toEqual(before.files);
 });
 
@@ -256,4 +272,127 @@ test("CA-3.7 an empty or blank note leaves no file, no folder and no mention", (
     expect(existsSync(join(result.path, "notes"))).toBe(false);
     expect(readFileSync(join(result.path, "README.md"), "utf8")).toBe(expectedReadme(false));
   }
+});
+
+const COMMENT = "  # Gosto do espaçamento 🍇\n\n\t* evitar o `azul` & a sombra  \n";
+const MARKS_LINE =
+  "Some references have marks: parts of the image the owner pointed at, listed under the image below. Each mark has a crop of that part in `marks/`. `like` means the owner wants this taken as a quality to reproduce; `dislike` means avoid it. A mark may also have a comment file, in the owner's own words and possibly in a language other than English. `area` says where the part is in the full image, as percentages of its width (x, from the left) and of its height (y, from the top).";
+
+function crop(n: number): Uint8Array {
+  return new Uint8Array([...PNG_BYTES, n]);
+}
+
+function mark(library: Library, imageId: string, kind: "like" | "dislike", n: number) {
+  const result = addMark(library, imageId, {
+    kind,
+    area: { left: 0.1, top: 0.2, right: 0.4, bottom: 0.9 },
+    crop: crop(n),
+  });
+  if (!result.ok) throw new Error("expected ok");
+  return result.mark;
+}
+
+test("CA-4.9 each mark of a selected image gets its crop and its comment in marks/, and the README lists them", () => {
+  const library = makeLibrary();
+  fillLibrary(library);
+  setAllSelected(library, true);
+  setIntent(library, INTENT);
+  const b = listImages(library)[1];
+  setNote(library, b?.id ?? "", NOTE);
+  const m1 = addMark(library, b?.id ?? "", {
+    kind: "like",
+    area: { left: 0.1, top: 0.2, right: 0.4, bottom: 0.9 },
+    crop: crop(1),
+  });
+  const m2 = addMark(library, b?.id ?? "", {
+    kind: "dislike",
+    area: { left: 0.604, top: 0, right: 1, bottom: 0.338 },
+    crop: crop(2),
+  });
+  if (!m1.ok || !m2.ok) throw new Error("expected ok");
+  setMarkComment(library, m1.mark.id, COMMENT);
+  const result = createPack(library, now);
+  if (!result.ok) throw new Error("expected ok");
+  expect(readdirSync(join(result.path, "marks")).sort()).toEqual([
+    "02-1.md",
+    "02-1.png",
+    "02-2.png",
+  ]);
+  expect(readFileSync(join(result.path, "marks", "02-1.png"))).toEqual(Buffer.from(crop(1)));
+  expect(readFileSync(join(result.path, "marks", "02-2.png"))).toEqual(Buffer.from(crop(2)));
+  expect(readFileSync(join(result.path, "marks", "02-1.md"))).toEqual(Buffer.from(COMMENT, "utf8"));
+  expect(readFileSync(join(result.path, "README.md"), "utf8")).toBe(
+    [
+      "# Reference pack",
+      "",
+      "This folder is a set of design references exported from refpack.",
+      "Use the images in `refs/` as visual references for the interface you are asked to build.",
+      "",
+      INTENT_LINE,
+      "",
+      NOTES_LINE,
+      "",
+      MARKS_LINE,
+      "",
+      "- Created: 2026-11-09 14:05:09",
+      "- References: 3",
+      "",
+      "## References",
+      "",
+      "1. `refs/01.webp`",
+      "2. `refs/02.jpg` — note: `notes/02.md`",
+      "   - Mark 1 (like): `marks/02-1.png` — comment: `marks/02-1.md` — area: x 10%–40%, y 20%–90%",
+      "   - Mark 2 (dislike): `marks/02-2.png` — area: x 60%–100%, y 0%–34%",
+      "3. `refs/03.png`",
+      "",
+    ].join("\n"),
+  );
+});
+
+test("CA-4.6 CA-4.9 the files take the image's number in this pack and the mark's number after a delete, and unselected marks stay out", () => {
+  const library = makeLibrary();
+  fillLibrary(library);
+  const byName = new Map(listImages(library).map((image) => [image.originalName, image.id]));
+  const a = byName.get("a.png") ?? "";
+  setSelected(library, a, true);
+  setSelected(library, byName.get("c.webp") ?? "", true);
+  const first = mark(library, a, "like", 1);
+  mark(library, a, "like", 2);
+  mark(library, a, "like", 3);
+  deleteMark(library, first.id);
+  mark(library, byName.get("b.jpg") ?? "", "like", 4);
+  const result = createPack(library, now);
+  if (!result.ok) throw new Error("expected ok");
+  expect(readdirSync(join(result.path, "marks")).sort()).toEqual(["02-1.png", "02-2.png"]);
+  expect(readFileSync(join(result.path, "marks", "02-1.png"))).toEqual(Buffer.from(crop(2)));
+  expect(readFileSync(join(result.path, "marks", "02-2.png"))).toEqual(Buffer.from(crop(3)));
+  const readme = readFileSync(join(result.path, "README.md"), "utf8");
+  expect(readme).toContain("2. `refs/02.png`\n   - Mark 1 (like): `marks/02-1.png` — area:");
+  expect(readme).not.toContain("marks/01-");
+});
+
+test("CA-4.9 a mark with an empty or blank comment has only its crop", () => {
+  for (const blank of ["", " \n\t "]) {
+    const library = makeLibrary();
+    fillLibrary(library);
+    const m = mark(library, listImages(library)[1]?.id ?? "", "like", 1);
+    setMarkComment(library, m.id, blank);
+    setAllSelected(library, true);
+    const result = createPack(library, now);
+    if (!result.ok) throw new Error("expected ok");
+    expect(readdirSync(join(result.path, "marks"))).toEqual(["02-1.png"]);
+    expect(readFileSync(join(result.path, "README.md"), "utf8")).not.toContain("comment:");
+  }
+});
+
+test("CA-4.9 without marks on the selected images the pack has no marks folder and no mention", () => {
+  const library = makeLibrary();
+  fillLibrary(library);
+  const byName = new Map(listImages(library).map((image) => [image.originalName, image.id]));
+  setSelected(library, byName.get("a.png") ?? "", true);
+  mark(library, byName.get("b.jpg") ?? "", "like", 1);
+  const result = createPack(library, now);
+  if (!result.ok) throw new Error("expected ok");
+  expect(existsSync(join(result.path, "marks"))).toBe(false);
+  expect(readFileSync(join(result.path, "README.md"), "utf8")).not.toContain("mark");
 });
