@@ -1,5 +1,6 @@
 import type { Area, Mark, MarkKind } from "../../shared/api.ts";
 import { useI18n } from "../i18n/index.tsx";
+import { MarkItem } from "./MarkItem.tsx";
 
 export function MarkPanel({
   marks,
@@ -7,12 +8,18 @@ export function MarkPanel({
   failed,
   onChoose,
   onCancel,
+  focusId,
+  onCommentSaved,
+  registerFlush,
 }: {
   marks: Mark[];
   pending: Area | null;
   failed: boolean; // the last change to the marks could not be saved
   onChoose: (kind: MarkKind) => void;
   onCancel: () => void;
+  focusId: string | null; // the mark whose comment box gets the cursor when it appears
+  onCommentSaved: (markId: string, comment: string) => void;
+  registerFlush: (markId: string, flush: (() => Promise<boolean>) | null) => void;
 }) {
   const { t } = useI18n();
   return (
@@ -36,12 +43,14 @@ export function MarkPanel({
       {marks.length > 0 ? (
         <ol>
           {marks.map((mark, index) => (
-            <li key={mark.id}>
-              <span className="mark-number">
-                {t("mark.itemLabel", { number: String(index + 1) })}
-              </span>{" "}
-              {t(mark.kind === "like" ? "mark.like" : "mark.dislike")}
-            </li>
+            <MarkItem
+              key={mark.id}
+              mark={mark}
+              number={index + 1}
+              focus={mark.id === focusId}
+              onCommentSaved={onCommentSaved}
+              registerFlush={registerFlush}
+            />
           ))}
         </ol>
       ) : null}

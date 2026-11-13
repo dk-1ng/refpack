@@ -259,3 +259,17 @@ header label {
   display: flex;
   gap: 0.5rem;
 }
+
+.marks li > textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 3rem;
+  margin-top: 0.25rem;
+  font: inherit;
+  resize: vertical;
+}
+
+.marks li {
+  margin-bottom: 0.5rem;
+}

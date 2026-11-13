@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Locator, Page } from "@playwright/test";
 import type { Area } from "../src/shared/api.ts";
-import { drop, expect, readPng, test } from "./support.ts";
+import { drop, expect, pasteInto, readPng, test } from "./support.ts";
 
 const a = { name: "a.png", content: "image/png" } as const;
 const b = { name: "b.jpg", content: "image/jpeg" } as const;
@@ -393,4 +393,183 @@ test("CA-4.11 with refpack stopped, a new mark is not created and the screen say
   await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
   await expect(viewer(page).getByRole("alert")).toHaveCount(0);
   await expect(marks(page)).toHaveCount(1);
+});
+
+const comment = (page: Page, n: number) => viewer(page).getByLabel(`Comment on mark ${n}`);
+const saved = (page: Page, n: number) =>
+  marks(page)
+    .nth(n - 1)
+    .getByRole("status");
+const TEXT = "  # Gosto do espaçamento 🍇\n\n* evitar o `azul` & a sombra  \n";
+const NOT_SAVED = "Could not save. Check that refpack is still running in the terminal.";
+const refuse = (route: { abort(code: string): Promise<void> }) => route.abort("connectionrefused");
+
+test("CA-4.2 after choosing the kind the cursor is in the new mark's comment box", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await expect(comment(page, 1)).toBeFocused();
+  await expect(comment(page, 1)).toHaveValue("");
+  await expect(comment(page, 1)).toHaveAttribute("placeholder", "Comment (optional)");
+  await expect(comment(page, 1)).toHaveAttribute("maxlength", "2000");
+  await mark(page, [0.5, 0.5], [0.9, 0.9], "Dislike");
+  await expect(comment(page, 2)).toBeFocused();
+});
+
+test("CA-4.4 CA-4.8 a comment saves by itself and comes back exactly as typed", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await expect(saved(page, 1)).toHaveText("");
+  await comment(page, 1).fill(TEXT);
+  await expect(saved(page, 1)).toHaveText("Saved");
+  await button(page, "Close").click();
+  await expect(viewer(page)).toHaveCount(0);
+  const restarted = await app.restart();
+  await page.goto(restarted.url);
+  await open(page, "a.png");
+  await expect(comment(page, 1)).toHaveValue(TEXT);
+  await expect(viewer(page).getByLabel("Note on this image")).toBeFocused();
+});
+
+test("CA-4.4 each mark keeps its own comment, and moving on saves what was typed", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a, b]);
+  await open(page, "b.jpg");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await mark(page, [0.5, 0.5], [0.9, 0.9], "Dislike");
+  await comment(page, 1).fill("one");
+  await expect(comment(page, 2)).toBeEnabled();
+  await comment(page, 2).pressSequentially("two");
+  await button(page, "Next").click();
+  await expect(page.getByRole("dialog", { name: "a.png" })).toBeVisible();
+  await button(page, "Previous").click();
+  await expect(page.getByRole("dialog", { name: "b.jpg" })).toBeVisible();
+  await expect(comment(page, 1)).toHaveValue("one");
+  await expect(comment(page, 2)).toHaveValue("two");
+  await page.reload();
+  await open(page, "b.jpg");
+  await expect(comment(page, 1)).toHaveValue("one");
+  await expect(comment(page, 2)).toHaveValue("two");
+});
+
+test("CA-4.4 CA-4.9 a comment typed right before closing and generating is in the pack", async ({
+  page,
+  app,
+}) => {
+  let release = (): void => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/marks/*/comment", async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await comment(page, 1).fill(TEXT);
+  await button(page, "Close").click();
+  await expect(viewer(page)).toBeVisible();
+  release();
+  await expect(viewer(page)).toHaveCount(0);
+  const path = await generate(page);
+  expect(await readFile(join(path, "marks", "01-1.md"), "utf8")).toBe(TEXT);
+  expect(await readFile(join(path, "README.md"), "utf8")).toContain(
+    "   - Mark 1 (like): `marks/01-1.png` — comment: `marks/01-1.md` — area: x 10%–40%, y 10%–40%",
+  );
+});
+
+test("CA-4.11 a comment that cannot be saved stays in the box with a warning, and leaving asks first", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a, b]);
+  await open(page, "b.jpg");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await page.route("**/api/marks/*/comment", refuse);
+  await expect(comment(page, 1)).toBeEnabled();
+  await comment(page, 1).pressSequentially("abc");
+  await expect(saved(page, 1)).toHaveText(NOT_SAVED);
+  await expect(comment(page, 1)).toHaveValue("abc");
+  let message = "";
+  page.once("dialog", (dialog) => {
+    message = dialog.message();
+    void dialog.dismiss();
+  });
+  await button(page, "Close").click();
+  await expect.poll(() => message).toBe("A comment was not saved. Leave anyway?");
+  await expect(viewer(page)).toBeVisible();
+  await expect(comment(page, 1)).toHaveValue("abc");
+  page.once("dialog", (dialog) => void dialog.accept());
+  await button(page, "Next").click();
+  await expect(page.getByRole("dialog", { name: "a.png" })).toBeVisible();
+});
+
+test("CA-3.9 CA-4.11 with the note and a comment unsaved, the screen asks once, about the note", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await page.route("**/api/images/*/note", refuse);
+  await page.route("**/api/marks/*/comment", refuse);
+  const note = viewer(page).getByLabel("Note on this image");
+  await note.fill("a note");
+  await comment(page, 1).fill("a comment");
+  await expect(saved(page, 1)).toHaveText(NOT_SAVED);
+  const messages: string[] = [];
+  page.on("dialog", (dialog) => {
+    messages.push(dialog.message());
+    void dialog.dismiss();
+  });
+  await button(page, "Close").click();
+  await expect.poll(() => messages.length).toBe(1);
+  await expect(viewer(page)).toBeVisible();
+  expect(messages).toEqual(["This note was not saved. Leave anyway?"]);
+});
+
+test("CA-3.10 text pasted into a comment box shows no notice, and a pasted image adds nothing", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await pasteInto(comment(page, 1), [], "hello");
+  await pasteInto(comment(page, 1), [{ name: "p.png", content: "image/png" }]);
+  await expect(comment(page, 1)).toHaveValue("");
+  await button(page, "Close").click();
+  await expect(viewer(page)).toHaveCount(0);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(images(page)).toHaveCount(1);
+});
+
+test("CA-4.4 the comment box follows the screen language", async ({ page, app }) => {
+  await page.goto(app.url);
+  await page.getByLabel("Language").selectOption({ label: "Português" });
+  await drop(page, [a]);
+  await item(page, "a.png").getByRole("button", { name: "Anotar" }).click();
+  await ready(page);
+  await drag(page, [0.1, 0.1], [0.4, 0.4]);
+  await viewer(page).getByRole("button", { name: "Gosto", exact: true }).click();
+  const box1 = viewer(page).getByLabel("Comentário da marcação 1");
+  await expect(box1).toBeFocused();
+  await expect(box1).toHaveAttribute("placeholder", "Comentário (opcional)");
 });

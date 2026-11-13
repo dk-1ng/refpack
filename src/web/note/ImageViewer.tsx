@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   type Area,
   type Image,
@@ -39,19 +39,43 @@ export function ImageViewer({
   const [pending, setPending] = useState<Area | null>(null);
   const [failed, setFailed] = useState(false);
   const creating = useRef(false);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const flushes = useRef(new Map<string, () => Promise<boolean>>());
+
+  const registerFlush = useCallback((markId: string, flush: (() => Promise<boolean>) | null) => {
+    if (flush === null) flushes.current.delete(markId);
+    else flushes.current.set(markId, flush);
+  }, []);
+
+  const commentSaved = useCallback(
+    (markId: string, comment: string) =>
+      onMarks(image.id, (marks) =>
+        marks.map((item) => (item.id === markId ? { ...item, comment } : item)),
+      ),
+    [image.id, onMarks],
+  );
 
   useLayoutEffect(() => {
     dialogRef.current?.showModal();
     textareaRef.current?.focus();
   }, []);
 
-  // Runs `then` once the note is saved; when it cannot be saved, asks first (CA-3.9).
+  // Runs `then` once the note and every comment are saved; when something cannot be saved, asks
+  // first, once: about the note if it is the note, otherwise about the comment (CA-3.9, CA-4.11).
   // A call made while another one is still running is ignored.
   async function leave(then: () => void): Promise<void> {
     if (leaving.current) return;
     leaving.current = true;
     try {
-      if ((await note.flush()) || window.confirm(t("note.confirmLeave"))) then();
+      const noteOk = await note.flush();
+      const results = await Promise.all([...flushes.current.values()].map((flush) => flush()));
+      const commentsOk = results.every(Boolean);
+      if (
+        (noteOk && commentsOk) ||
+        window.confirm(t(noteOk ? "mark.confirmLeave" : "note.confirmLeave"))
+      ) {
+        then();
+      }
     } finally {
       leaving.current = false;
     }
@@ -70,6 +94,7 @@ export function ImageViewer({
         setFailed(true);
       } else {
         onMarks(image.id, (marks) => [...marks, mark]);
+        setFocusId(mark.id);
         setFailed(false);
       }
     } finally {
@@ -117,6 +142,9 @@ export function ImageViewer({
           failed={failed}
           onChoose={(kind) => void choose(kind)}
           onCancel={() => setPending(null)}
+          focusId={focusId}
+          onCommentSaved={commentSaved}
+          registerFlush={registerFlush}
         />
         <div className="viewer-buttons">
           <button

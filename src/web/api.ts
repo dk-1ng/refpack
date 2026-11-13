@@ -164,3 +164,16 @@ export async function createMark(
     return null;
   }
 }
+
+export async function saveMarkComment(markId: string, comment: string): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/marks/${encodeURIComponent(markId)}/comment`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ comment }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
