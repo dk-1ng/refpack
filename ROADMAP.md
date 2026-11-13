@@ -42,3 +42,7 @@ Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só 
 - Colar na caixa da intenção algo que traz texto e imagem juntos (por exemplo, células de uma planilha) põe o texto na caixa.
 - "Gerar pacote" com o refpack parado mostra o aviso de que não foi possível salvar, em vez de "Algo deu errado".
 - Depois de "Começar outro pacote", o caminho do último pacote gerado deixa de aparecer na tela.
+- O aviso "Não foi possível salvar" das marcações some ao cancelar ou ao desenhar outro retângulo, em vez de ficar até a próxima mudança que dê certo.
+- Uma marcação grande demais para salvar (recorte acima de 100 MB) mostra um aviso próprio, em vez do aviso de "refpack parado".
+- A caixa da intenção mostra que ainda está carregando, nos primeiros instantes em que fica travada.
+- No `README.md` do pacote, as linhas das marcações ficam no lugar certo também em pacotes com 10 imagens ou mais, em qualquer visualizador de Markdown.
