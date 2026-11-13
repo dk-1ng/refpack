@@ -12,6 +12,7 @@ import {
   MAX_NOTE_LENGTH,
   MarkSchema,
   PackCreatedSchema,
+  TagSchema,
 } from "../shared/api.ts";
 import { createApp } from "./app.ts";
 import { closeLibrary, type Library, openLibrary } from "./library.ts";
@@ -473,4 +474,132 @@ test("CA-0.11 the mark routes are behind the local-only guard", async () => {
     expect(response.status, `${method} ${path}`).toBe(403);
   }
   expect(await listedMarks(app)).toEqual([created]);
+});
+
+const FANCY = 'Dashboard "escuro" \\ ✨';
+const tagsOf = (id: string) => `/api/images/${id}/tags`;
+
+function postTag(app: ReturnType<typeof makeApp>, imageId: string, body: unknown) {
+  return localRequest(app, tagsOf(imageId), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: typeof body === "string" ? body : JSON.stringify(body),
+  });
+}
+
+async function listedImages(app: ReturnType<typeof makeApp>) {
+  return ImageListSchema.parse(await (await localRequest(app, "/api/images")).json()).images;
+}
+
+test("CA-5.1 POST /api/images/:id/tags puts the tag on the image and GET /api/images returns it", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  expect(image.tags).toEqual([]);
+  const response = await postTag(app, image.id, { name: FANCY });
+  expect(response.status).toBe(201);
+  const created = TagSchema.parse(await response.json());
+  expect(created.name).toBe(FANCY);
+  expect((await listedImages(app))[0]?.tags).toEqual([created]);
+});
+
+test("CA-5.2 POST /api/images/:id/tags drops the spaces at the ends, reuses a tag by case, and answers 200 when the image already has it", async () => {
+  const app = makeApp();
+  const a = await uploaded(app);
+  const b = ImageSchema.parse(await (await upload(app, JPEG_BYTES, "b.jpg")).json());
+  const first = await postTag(app, a.id, { name: "  dashboard " });
+  expect(first.status).toBe(201);
+  const created = TagSchema.parse(await first.json());
+  expect(created.name).toBe("dashboard");
+  const second = await postTag(app, b.id, { name: "Dashboard" });
+  expect(second.status).toBe(201);
+  expect(await second.json()).toEqual(created);
+  const third = await postTag(app, b.id, { name: "DASHBOARD" });
+  expect(third.status).toBe(200);
+  expect(await third.json()).toEqual(created);
+  const images = await listedImages(app);
+  expect(images[0]?.tags).toEqual([created]);
+  expect(images[1]?.tags).toEqual([created]);
+});
+
+test("POST /api/images/:id/tags answers 400 for a wrong body, 404 for an unknown or malformed image, and 413 above 128 KiB", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  for (const body of [
+    "{}",
+    '{"name":""}',
+    '{"name":"   "}',
+    '{"name":5}',
+    "not json",
+    { name: "x".repeat(61) },
+  ]) {
+    const response = await postTag(app, image.id, body);
+    expect(response.status, JSON.stringify(body)).toBe(400);
+    expect(await response.json()).toEqual({ error: { code: "invalid-request" } });
+  }
+  expect((await postTag(app, image.id, { name: "x".repeat(60) })).status).toBe(201);
+  expect((await postTag(app, image.id, { name: ` ${"y".repeat(60)} ` })).status).toBe(201);
+  for (const id of [UNKNOWN, "not-a-uuid"]) {
+    const response = await postTag(app, id, { name: "ok" });
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: { code: "not-found" } });
+  }
+  const big = await postTag(app, image.id, "x".repeat(128 * 1024 + 1));
+  expect(big.status).toBe(413);
+  expect(await big.json()).toEqual({ error: { code: "too-large" } });
+});
+
+test("CA-5.4 DELETE /api/images/:id/tags/:tagId takes the tag off the image", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  const created = TagSchema.parse(await (await postTag(app, image.id, { name: "x" })).json());
+  const path = `${tagsOf(image.id)}/${created.id}`;
+  expect((await localRequest(app, path, { method: "DELETE" })).status).toBe(204);
+  expect((await listedImages(app))[0]?.tags).toEqual([]);
+  expect((await localRequest(app, path, { method: "DELETE" })).status).toBe(404);
+  for (const bad of [`${tagsOf(UNKNOWN)}/${created.id}`, `${tagsOf(image.id)}/not-a-uuid`]) {
+    const response = await localRequest(app, bad, { method: "DELETE" });
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: { code: "not-found" } });
+  }
+});
+
+test("CA-5.7 PUT /api/draft/selection with a tagId selects only the images with that tag", async () => {
+  const app = makeApp();
+  const a = await uploaded(app);
+  await upload(app, JPEG_BYTES, "b.jpg");
+  const c = await uploaded(app);
+  const ui = TagSchema.parse(await (await postTag(app, a.id, { name: "ui" })).json());
+  await postTag(app, c.id, { name: "ui" });
+  const putSelection = (body: string) => put(app, "/api/draft/selection", body);
+  expect((await putSelection(JSON.stringify({ selected: true, tagId: ui.id }))).status).toBe(204);
+  expect(await selectedFlags(app)).toEqual([true, false, true]);
+  expect((await putSelection(JSON.stringify({ selected: false, tagId: ui.id }))).status).toBe(204);
+  expect(await selectedFlags(app)).toEqual([false, false, false]);
+  const unknown = await putSelection(JSON.stringify({ selected: true, tagId: UNKNOWN }));
+  expect(unknown.status).toBe(404);
+  expect(await unknown.json()).toEqual({ error: { code: "not-found" } });
+  const bad = await putSelection(JSON.stringify({ selected: true, tagId: "x" }));
+  expect(bad.status).toBe(400);
+  expect(await selectedFlags(app)).toEqual([false, false, false]);
+  expect((await putSelection('{"selected":true}')).status).toBe(204);
+  expect(await selectedFlags(app)).toEqual([true, true, true]);
+});
+
+test("CA-0.11 the tag routes are behind the local-only guard", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  const created = TagSchema.parse(await (await postTag(app, image.id, { name: "x" })).json());
+  const requests: [string, string, BodyInit | undefined][] = [
+    ["POST", tagsOf(image.id), '{"name":"y"}'],
+    ["DELETE", `${tagsOf(image.id)}/${created.id}`, undefined],
+  ];
+  for (const [method, path, body] of requests) {
+    const response = await app.request(`http://evil.example${path}`, {
+      method,
+      headers: { host: "evil.example", "content-type": "application/json" },
+      body,
+    });
+    expect(response.status, `${method} ${path}`).toBe(403);
+  }
+  expect((await listedImages(app))[0]?.tags).toEqual([created]);
 });

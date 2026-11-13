@@ -4,6 +4,7 @@ export const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
 export const MAX_INTENT_LENGTH = 10_000;
 export const MAX_NOTE_LENGTH = 10_000;
 export const MAX_COMMENT_LENGTH = 2_000;
+export const MAX_TAG_LENGTH = 60;
 export const MAX_CROP_BYTES = 100 * 1024 * 1024;
 
 export const MarkKindSchema = z.enum(["like", "dislike"]);
@@ -27,6 +28,12 @@ export const MarkKindBodySchema = z.object({ kind: MarkKindSchema });
 // The body of PUT /api/marks/:id/comment.
 export const MarkCommentSchema = z.object({ comment: z.string().max(MAX_COMMENT_LENGTH) });
 
+export const TagSchema = z.object({ id: z.uuid(), name: z.string() });
+// The body of POST /api/images/:id/tags. Spaces at both ends are not part of the tag.
+export const TagBodySchema = z.object({ name: z.string().trim().min(1).max(MAX_TAG_LENGTH) });
+// The body of PUT /api/draft/selection: every image, or only those with the tag.
+export const SelectionBodySchema = z.object({ selected: z.boolean(), tagId: z.uuid().optional() });
+
 export const ImageSchema = z.object({
   id: z.uuid(),
   originalName: z.string(),
@@ -34,6 +41,7 @@ export const ImageSchema = z.object({
   selected: z.boolean(),
   note: z.string(),
   marks: z.array(MarkSchema),
+  tags: z.array(TagSchema),
 });
 export const ImageListSchema = z.object({ images: z.array(ImageSchema) });
 export const ErrorCodeSchema = z.enum([
@@ -55,6 +63,7 @@ export const PackCreatedSchema = z.object({ path: z.string(), count: z.number().
 export type Image = z.infer<typeof ImageSchema>;
 export type MarkKind = z.infer<typeof MarkKindSchema>;
 export type Area = z.infer<typeof AreaSchema>;
+export type Tag = z.infer<typeof TagSchema>;
 export type Mark = z.infer<typeof MarkSchema>;
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>;
 export type PackCreated = z.infer<typeof PackCreatedSchema>;

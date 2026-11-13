@@ -9,8 +9,21 @@ export function setSelected(library: Library, id: string, selected: boolean): bo
   return Number(result.changes) > 0;
 }
 
-export function setAllSelected(library: Library, selected: boolean): void {
-  library.db.prepare("UPDATE images SET selected = ?").run(selected ? 1 : 0);
+// Selects or unselects every image, or only the images with the tag when `tagId` is given.
+// False only when `tagId` is given and no tag has that id; nothing changes then.
+export function setAllSelected(library: Library, selected: boolean, tagId?: string): boolean {
+  const value = selected ? 1 : 0;
+  if (tagId === undefined) {
+    library.db.prepare("UPDATE images SET selected = ?").run(value);
+    return true;
+  }
+  if (library.db.prepare("SELECT 1 FROM tags WHERE id = ?").get(tagId) === undefined) return false;
+  library.db
+    .prepare(
+      "UPDATE images SET selected = ? WHERE id IN (SELECT image_id FROM image_tags WHERE tag_id = ?)",
+    )
+    .run(value, tagId);
+  return true;
 }
 
 const IntentRowSchema = z.object({ intent: z.string() });
