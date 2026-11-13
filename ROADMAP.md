@@ -13,7 +13,7 @@ Só a próxima fatia é detalhada (critérios de aceite no `SPEC.md`, tarefas em
 | 2 | Escolher e dizer a intenção | Escolher quais imagens entram no pacote e escrever a intenção do projeto, que sai no pacote. | feita |
 | 3 | Nota geral | Escrever uma nota em cada imagem; ela salva sozinha, fica exatamente como escrevi e sai no pacote. | feita |
 | 4 | Marcar partes | Marcar áreas de uma imagem com "gosto" ou "não gosto" e um comentário; o pacote traz o recorte de cada marcação. | feita |
-| 5 | Etiquetas | Etiquetar imagens e filtrar a grade por etiqueta. | próxima |
+| 5 | Etiquetas | Colocar etiquetas numa imagem, reaproveitando as que já usei, filtrar a grade por uma etiqueta e ver as etiquetas de cada referência no pacote. | próxima |
 | 6 | Entrada em volume | Importar uma pasta inteira; a grade continua rápida com milhares de imagens. | roteiro |
 | 7 | Sugestões da IA | Pedir ao Claude Code que descreva as imagens novas e revisar cada sugestão: aceitar, corrigir ou rejeitar. | roteiro |
 | 8 | Famílias | Receber famílias estéticas propostas pela IA, aprovar, renomear ou desfazer, e montar um pacote a partir de uma delas. | roteiro |
@@ -46,3 +46,8 @@ Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só 
 - Uma marcação grande demais para salvar (recorte acima de 100 MB) mostra um aviso próprio, em vez do aviso de "refpack parado".
 - A caixa da intenção mostra que ainda está carregando, nos primeiros instantes em que fica travada.
 - No `README.md` do pacote, as linhas das marcações ficam no lugar certo também em pacotes com 10 imagens ou mais, em qualquer visualizador de Markdown.
+- Renomear uma etiqueta, ou tirá-la de todas as imagens de uma vez.
+- Etiquetar várias imagens de uma vez, ou direto na grade sem abrir a imagem.
+- Filtrar por mais de uma etiqueta, ou por "sem etiqueta"; lembrar o filtro ao reabrir o refpack.
+- Escolher uma sugestão de etiqueta pelas setas do teclado.
+- Buscar imagens por texto da nota, do comentário ou da etiqueta.
