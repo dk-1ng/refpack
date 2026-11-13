@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { getIntent } from "./draft.ts";
 import { type Library, listImages } from "./library.ts";
+import { cropFileName, listMarks, type StoredMark } from "./marks.ts";
 
 function two(value: number): string {
   return String(value).padStart(2, "0");
@@ -22,6 +23,21 @@ export function packFolderName(now: Date): string {
 export function refNumber(index: number, count: number): string {
   const width = Math.max(2, String(count).length);
   return String(index).padStart(width, "0");
+}
+
+const MARKS_PARAGRAPH =
+  "Some references have marks: parts of the image the owner pointed at, listed under the image below. Each mark has a crop of that part in `marks/`. `like` means the owner wants this taken as a quality to reproduce; `dislike` means avoid it. A mark may also have a comment file, in the owner's own words and possibly in a language other than English. `area` says where the part is in the full image, as percentages of its width (x, from the left) and of its height (y, from the top).";
+
+function percent(fraction: number): number {
+  return Math.round(fraction * 100);
+}
+
+function markLine(mark: StoredMark, position: number, number: string): string {
+  const base = `${number}-${position}`;
+  const comment = mark.comment.trim() === "" ? "" : ` — comment: \`marks/${base}.md\``;
+  const { left, top, right, bottom } = mark.area;
+  const area = `x ${percent(left)}%–${percent(right)}%, y ${percent(top)}%–${percent(bottom)}%`;
+  return `   - Mark ${position} (${mark.kind}): \`marks/${base}.png\`${comment} — area: ${area}`;
 }
 
 export type PackResult =
@@ -64,6 +80,29 @@ export function createPack(library: Library, now: Date): PackResult {
       writeFileSync(join(path, "notes", `${number}.md`), image.note);
     }
   }
+  const allMarks = listMarks(library);
+  const marksOf = images.map((image) => allMarks.get(image.id) ?? []);
+  const hasMarks = marksOf.some((list) => list.length > 0);
+  const markLines = marksOf.map((list, index) => {
+    const number = refNames[index]?.split(".")[0] ?? "";
+    return list.map((mark, position) => markLine(mark, position + 1, number));
+  });
+  if (hasMarks) {
+    mkdirSync(join(path, "marks"));
+    marksOf.forEach((list, index) => {
+      const number = refNames[index]?.split(".")[0] ?? "";
+      list.forEach((mark, position) => {
+        const base = `${number}-${position + 1}`;
+        copyFileSync(
+          join(library.marksDir, cropFileName(mark.id)),
+          join(path, "marks", `${base}.png`),
+        );
+        if (mark.comment.trim() !== "") {
+          writeFileSync(join(path, "marks", `${base}.md`), mark.comment);
+        }
+      });
+    });
+  }
   writeFileSync(join(path, ".gitignore"), "*\n");
   const created = `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())} ${two(now.getHours())}:${two(now.getMinutes())}:${two(now.getSeconds())}`;
   const intent = getIntent(library);
@@ -86,17 +125,23 @@ export function createPack(library: Library, now: Date): PackResult {
           "Some references have a note from the owner, shown next to the image in the list below. Read each note together with its image: it says what to take from that reference and what to avoid. The notes are in the owner's own words and may be in a language other than English.",
         ]
       : []),
+    ...(hasMarks ? ["", MARKS_PARAGRAPH] : []),
     "",
     `- Created: ${created}`,
     `- References: ${images.length}`,
     "",
     "## References",
     "",
-    ...refNames.map((name, index) => {
-      const line = `${index + 1}. \`refs/${name}\``;
-      if (images[index]?.note.trim() === "") return line;
-      return `${line} — note: \`notes/${name.split(".")[0]}.md\``;
-    }),
+    ...refNames
+      .map((name, index) => {
+        const line = `${index + 1}. \`refs/${name}\``;
+        const withNote =
+          images[index]?.note.trim() === ""
+            ? line
+            : `${line} — note: \`notes/${name.split(".")[0]}.md\``;
+        return [withNote, ...(markLines[index] ?? [])];
+      })
+      .flat(),
     "",
   ].join("\n");
   writeFileSync(join(path, "README.md"), readme);

@@ -139,9 +139,27 @@ header label {
   background: currentColor;
 }
 
+.mark-count {
+  display: inline-block;
+  min-width: 1.2rem;
+  margin-left: 0.4rem;
+  padding: 0 0.3rem;
+  border-radius: 0.6rem;
+  background: #dddddd;
+  color: #222222;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.marks [role="radiogroup"] {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .viewer[open] {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 22rem;
+  grid-template-rows: minmax(0, 1fr);
   gap: 1rem;
   width: 95vw;
   height: 95vh;
@@ -151,12 +169,63 @@ header label {
   box-sizing: border-box;
 }
 
-.viewer-image {
-  width: 100%;
-  height: 100%;
+/* The space the image may take. Its size never depends on what is inside, so the frame can
+   be sized from it with container units. */
+.viewer-stage {
+  display: grid;
+  place-items: center;
   min-width: 0;
   min-height: 0;
+  container-type: size;
+}
+
+/* Exactly the box the image is shown in: the largest box with the image's proportion
+   (--ratio, set once the image has loaded) that fits in the stage. */
+.viewer-frame {
+  position: relative;
+  width: min(100cqw, 100cqh * var(--ratio, 1));
+  height: min(100cqh, 100cqw / var(--ratio, 1));
+  user-select: none;
+  touch-action: none;
+}
+
+.viewer-image {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  user-select: none;
+}
+
+.mark-box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #1a1a1a;
+  pointer-events: none;
+}
+
+.mark-box span {
+  display: inline-block;
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  background: #ffffff;
+  white-space: nowrap;
+}
+
+.mark-like {
+  border: 2px solid #1a7f37;
+  color: #1a7f37;
+}
+
+.mark-dislike {
+  border: 2px dashed #b00020;
+  color: #b00020;
+}
+
+.mark-new {
+  border: 2px dashed #1a56db;
+  background: rgba(26, 86, 219, 0.12);
 }
 
 .viewer-side {
@@ -166,10 +235,36 @@ header label {
   min-height: 0;
 }
 
-.viewer-side textarea {
+.viewer-side > textarea {
   flex: 1;
+  min-height: 6rem;
   font: inherit;
   resize: none;
+}
+
+.marks {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.marks p {
+  margin: 0 0 0.5rem;
+}
+
+.marks p[role="alert"] {
+  color: #b00020;
+}
+
+.mark-choice {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.marks ol {
+  margin: 0;
+  padding-left: 1.5rem;
 }
 
 .viewer-status {
@@ -180,4 +275,18 @@ header label {
 .viewer-buttons {
   display: flex;
   gap: 0.5rem;
+}
+
+.marks li > textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 3rem;
+  margin-top: 0.25rem;
+  font: inherit;
+  resize: vertical;
+}
+
+.marks li {
+  margin-bottom: 0.5rem;
 }

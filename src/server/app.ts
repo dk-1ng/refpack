@@ -6,10 +6,15 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import {
+  AreaSchema,
   type ErrorCode,
   type Image,
   IntentSchema,
+  MAX_CROP_BYTES,
   MAX_IMAGE_BYTES,
+  MarkCommentSchema,
+  MarkKindBodySchema,
+  MarkKindSchema,
   NoteSchema,
   SelectedBodySchema,
 } from "../shared/api.ts";
@@ -23,6 +28,14 @@ import {
   type StoredImage,
   setNote,
 } from "./library.ts";
+import {
+  addMark,
+  deleteMark,
+  listMarks,
+  type StoredMark,
+  setMarkComment,
+  setMarkKind,
+} from "./marks.ts";
 import { createPack } from "./pack.ts";
 
 const MAX_TEXT_REQUEST_BYTES = 128 * 1024;
@@ -37,14 +50,41 @@ function errorBody(code: ErrorCode): { error: { code: ErrorCode } } {
   return { error: { code } };
 }
 
-function toImage(image: StoredImage): Image {
+function toImage(image: StoredImage, marks: StoredMark[]): Image {
   return {
     id: image.id,
     originalName: image.originalName,
     url: `/api/images/${image.id}/file`,
     selected: image.selected,
     note: image.note,
+    marks: marks.map((mark) => ({
+      id: mark.id,
+      kind: mark.kind,
+      area: mark.area,
+      comment: mark.comment,
+    })),
   };
+}
+
+function parseMarkQuery(query: Record<string, string>) {
+  const edge = (value: string | undefined): number =>
+    value === undefined || value.trim() === "" ? Number.NaN : Number(value);
+  const kind = MarkKindSchema.safeParse(query.kind);
+  const area = AreaSchema.safeParse({
+    left: edge(query.left),
+    top: edge(query.top),
+    right: edge(query.right),
+    bottom: edge(query.bottom),
+  });
+  return kind.success && area.success ? { kind: kind.data, area: area.data } : null;
+}
+
+async function readJson(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch {
+    return undefined;
+  }
 }
 
 async function readSelectedBody(request: Request): Promise<boolean | null> {
@@ -70,7 +110,12 @@ export function createApp(deps: AppDeps): Hono {
   const app = new Hono();
   app.use("*", localOnly());
 
-  app.get("/api/images", (c) => c.json({ images: listImages(library).map(toImage) }));
+  app.get("/api/images", (c) => {
+    const marks = listMarks(library);
+    return c.json({
+      images: listImages(library).map((image) => toImage(image, marks.get(image.id) ?? [])),
+    });
+  });
 
   app.post(
     "/api/images",
@@ -87,7 +132,7 @@ export function createApp(deps: AppDeps): Hono {
           ? c.json(errorBody("too-large"), 413)
           : c.json(errorBody("unsupported-type"), 415);
       }
-      return c.json(toImage(result.image), 201);
+      return c.json(toImage(result.image, []), 201);
     },
   );
 
@@ -128,6 +173,64 @@ export function createApp(deps: AppDeps): Hono {
       return c.body(null, 204);
     },
   );
+
+  app.post(
+    "/api/images/:id/marks",
+    bodyLimit({
+      maxSize: MAX_CROP_BYTES,
+      onError: (c) => c.json(errorBody("too-large"), 413),
+    }),
+    async (c) => {
+      const input = parseMarkQuery(c.req.query());
+      if (input === null) return c.json(errorBody("invalid-request"), 400);
+      const crop = new Uint8Array(await c.req.arrayBuffer());
+      const result = addMark(library, c.req.param("id"), { ...input, crop });
+      if (!result.ok) {
+        return result.code === "not-found"
+          ? c.json(errorBody("not-found"), 404)
+          : c.json(errorBody("unsupported-type"), 415);
+      }
+      const { id, kind, area, comment } = result.mark;
+      return c.json({ id, kind, area, comment }, 201);
+    },
+  );
+
+  app.put(
+    "/api/marks/:id/kind",
+    bodyLimit({
+      maxSize: MAX_TEXT_REQUEST_BYTES,
+      onError: (c) => c.json(errorBody("too-large"), 413),
+    }),
+    async (c) => {
+      const parsed = MarkKindBodySchema.safeParse(await readJson(c.req.raw));
+      if (!parsed.success) return c.json(errorBody("invalid-request"), 400);
+      if (!setMarkKind(library, c.req.param("id"), parsed.data.kind)) {
+        return c.json(errorBody("not-found"), 404);
+      }
+      return c.body(null, 204);
+    },
+  );
+
+  app.put(
+    "/api/marks/:id/comment",
+    bodyLimit({
+      maxSize: MAX_TEXT_REQUEST_BYTES,
+      onError: (c) => c.json(errorBody("too-large"), 413),
+    }),
+    async (c) => {
+      const parsed = MarkCommentSchema.safeParse(await readJson(c.req.raw));
+      if (!parsed.success) return c.json(errorBody("invalid-request"), 400);
+      if (!setMarkComment(library, c.req.param("id"), parsed.data.comment)) {
+        return c.json(errorBody("not-found"), 404);
+      }
+      return c.body(null, 204);
+    },
+  );
+
+  app.delete("/api/marks/:id", (c) => {
+    if (!deleteMark(library, c.req.param("id"))) return c.json(errorBody("not-found"), 404);
+    return c.body(null, 204);
+  });
 
   app.put("/api/draft/selection", async (c) => {
     const selected = await readSelectedBody(c.req.raw);

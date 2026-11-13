@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Image } from "../shared/api.ts";
+import type { Image, Mark } from "../shared/api.ts";
 import { fetchImages, setAllSelected, setImageSelected } from "./api.ts";
 import { LANGUAGES, type Language, type Notice, useI18n } from "./i18n/index.tsx";
 import { AddImages } from "./library/AddImages.tsx";
@@ -70,6 +70,16 @@ export function App() {
     [],
   );
 
+  const marksChanged = useCallback(
+    (id: string, change: (marks: Mark[]) => Mark[]) =>
+      setImages((current) =>
+        current === null
+          ? current
+          : current.map((item) => (item.id === id ? { ...item, marks: change(item.marks) } : item)),
+      ),
+    [],
+  );
+
   const startOver = useCallback(async () => {
     if (!window.confirm(t("pack.confirmStartOver"))) return;
     const cleared = await setAllSelected(false);
@@ -94,9 +104,16 @@ export function App() {
     let cancelled = false;
     fetchImages().then(
       (loaded) => {
-        if (!cancelled) {
-          setImages((current) => (current === null ? loaded : [...current, ...loaded]));
+        if (cancelled) return;
+        if (loaded === null) {
+          refuse({ key: "error.versionMismatch" });
+          return;
         }
+        setImages((current) => {
+          if (current === null) return loaded;
+          const known = new Set(current.map((image) => image.id));
+          return [...current, ...loaded.filter((image) => !known.has(image.id))];
+        });
       },
       () => {
         if (!cancelled) {
@@ -107,7 +124,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refuse]);
 
   return (
     <main>
@@ -170,6 +187,7 @@ export function App() {
           onOpen={setOpenId}
           onClose={() => setOpenId(null)}
           onSaved={noteSaved}
+          onMarks={marksChanged}
         />
       ) : null}
     </main>

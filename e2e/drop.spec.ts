@@ -43,6 +43,31 @@ test("CA-1.6 dropped files enter the library like chosen ones", async ({ page, a
   await expect(page.getByText("Drop to add")).toHaveCount(0);
 });
 
+test("CA-4.12 an image dropped before the list loads shows up only once", async ({ page, app }) => {
+  await page.goto(app.url);
+  await drop(page, [{ name: "b.jpg", content: "image/jpeg" }]);
+  await expect(images(page)).toHaveCount(1);
+  // The list answer stays on its way, so the next image arrives before the list does.
+  let release = (): void => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/images", async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.continue();
+      return;
+    }
+    await held;
+    await route.continue();
+  });
+  await page.reload();
+  await drop(page, [{ name: "a.png", content: "image/png" }]);
+  await expect(images(page)).toHaveCount(1);
+  release();
+  await expect(images(page)).toHaveCount(2);
+  expect(await gridAlts(page)).toEqual(["a.png", "b.jpg"]);
+});
+
 test("CA-1.8 dropping text shows a notice, keeps nothing and leaves the screen open", async ({
   page,
   app,

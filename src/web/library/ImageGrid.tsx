@@ -22,6 +22,14 @@ export function ImageGrid({
           <button type="button" className="note-button" onClick={() => onOpenNote(image)}>
             {t("note.open")}
             {image.note.trim() !== "" ? <span className="note-mark" title={t("note.has")} /> : null}
+            {image.marks.length > 0 ? (
+              <span
+                className="mark-count"
+                title={t("mark.count", { count: String(image.marks.length) })}
+              >
+                {image.marks.length}
+              </span>
+            ) : null}
           </button>
         </li>
       ))}

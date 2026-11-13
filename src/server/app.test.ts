@@ -6,14 +6,16 @@ import {
   ImageListSchema,
   ImageSchema,
   IntentSchema,
+  MAX_COMMENT_LENGTH,
   MAX_IMAGE_BYTES,
   MAX_INTENT_LENGTH,
   MAX_NOTE_LENGTH,
+  MarkSchema,
   PackCreatedSchema,
 } from "../shared/api.ts";
 import { createApp } from "./app.ts";
 import { closeLibrary, type Library, openLibrary } from "./library.ts";
-import { localRequest, PNG_BYTES, tempLibraryRoot } from "./test-support.ts";
+import { JPEG_BYTES, localRequest, PNG_BYTES, tempLibraryRoot } from "./test-support.ts";
 
 const libraries: Library[] = [];
 function makeApp() {
@@ -300,4 +302,175 @@ test("CA-0.11 the note route is behind the local-only guard", async () => {
     body: '{"note":"x"}',
   });
   expect(response.status).toBe(403);
+});
+
+const COMMENT = "  # Gosto do espaçamento 🍇\n\n\t* evitar o `azul` & a sombra  \n";
+const AREA = { left: 0.1, top: 0.2, right: 0.4, bottom: 0.9 };
+const CROP = PNG_BYTES;
+const UNKNOWN = "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f";
+const MARK_QUERY = "kind=like&left=0.1&top=0.2&right=0.4&bottom=0.9";
+
+function postMark(
+  app: ReturnType<typeof makeApp>,
+  imageId: string,
+  query = MARK_QUERY,
+  body: Uint8Array = CROP,
+) {
+  return localRequest(app, `/api/images/${imageId}/marks?${query}`, {
+    method: "POST",
+    body: new Uint8Array(body),
+  });
+}
+
+async function listedMarks(app: ReturnType<typeof makeApp>) {
+  const listed = ImageListSchema.parse(await (await localRequest(app, "/api/images")).json());
+  return listed.images[0]?.marks;
+}
+
+async function uploaded(app: ReturnType<typeof makeApp>) {
+  return ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+}
+
+test("CA-4.2 POST /api/images/:id/marks creates a mark and GET /api/images returns it", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  expect(image.marks).toEqual([]);
+  const response = await postMark(app, image.id);
+  expect(response.status).toBe(201);
+  const created = MarkSchema.parse(await response.json());
+  expect(created).toEqual({ id: created.id, kind: "like", area: AREA, comment: "" });
+  expect(await listedMarks(app)).toEqual([created]);
+});
+
+test("POST /api/images/:id/marks answers 400 invalid-request for a wrong kind or area", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  const queries = [
+    "left=0.1&top=0.2&right=0.4&bottom=0.9",
+    "kind=love&left=0.1&top=0.2&right=0.4&bottom=0.9",
+    "kind=like&left=abc&top=0.2&right=0.4&bottom=0.9",
+    "kind=like&left=0.1&top=0.2&right=0.4",
+    "kind=like&left=0.5&top=0.2&right=0.5&bottom=0.9",
+    "kind=like&left=0.6&top=0.2&right=0.4&bottom=0.9",
+    "kind=like&left=0.1&top=0.2&right=1.2&bottom=0.9",
+    "kind=like&left=0.1&top=-0.1&right=0.4&bottom=0.9",
+  ];
+  for (const query of queries) {
+    const response = await postMark(app, image.id, query);
+    expect(response.status, query).toBe(400);
+    expect(await response.json()).toEqual({ error: { code: "invalid-request" } });
+  }
+  expect(await listedMarks(app)).toEqual([]);
+});
+
+test("POST /api/images/:id/marks answers 404 for an unknown or malformed image id and 415 for a crop that is not a PNG", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  for (const id of [UNKNOWN, "not-a-uuid"]) {
+    const response = await postMark(app, id);
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: { code: "not-found" } });
+  }
+  const jpeg = await postMark(app, image.id, MARK_QUERY, JPEG_BYTES);
+  expect(jpeg.status).toBe(415);
+  expect(await jpeg.json()).toEqual({ error: { code: "unsupported-type" } });
+  expect(await listedMarks(app)).toEqual([]);
+});
+
+test("CA-4.4 CA-4.5 PUT /api/marks/:id/comment and /kind store the change and GET /api/images returns it", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  const created = MarkSchema.parse(await (await postMark(app, image.id)).json());
+  const comment = await put(
+    app,
+    `/api/marks/${created.id}/comment`,
+    JSON.stringify({ comment: COMMENT }),
+  );
+  expect(comment.status).toBe(204);
+  const kind = await put(app, `/api/marks/${created.id}/kind`, '{"kind":"dislike"}');
+  expect(kind.status).toBe(204);
+  expect(await listedMarks(app)).toEqual([
+    { id: created.id, kind: "dislike", area: AREA, comment: COMMENT },
+  ]);
+});
+
+test("PUT /api/marks/:id/comment takes 2 000 characters and refuses 2 001", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  const created = MarkSchema.parse(await (await postMark(app, image.id)).json());
+  const ok = "x".repeat(MAX_COMMENT_LENGTH);
+  expect(
+    (await put(app, `/api/marks/${created.id}/comment`, JSON.stringify({ comment: ok }))).status,
+  ).toBe(204);
+  const tooLong = await put(
+    app,
+    `/api/marks/${created.id}/comment`,
+    JSON.stringify({ comment: `${ok}x` }),
+  );
+  expect(tooLong.status).toBe(400);
+  expect(await tooLong.json()).toEqual({ error: { code: "invalid-request" } });
+  expect((await listedMarks(app))?.[0]?.comment).toBe(ok);
+});
+
+test("the mark routes answer 400 for a wrong body, 404 for an unknown or malformed id, and 413 above 128 KiB", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  const created = MarkSchema.parse(await (await postMark(app, image.id)).json());
+  for (const body of ["{}", '{"kind":"love"}', "not json"]) {
+    const response = await put(app, `/api/marks/${created.id}/kind`, body);
+    expect(response.status, body).toBe(400);
+    expect(await response.json()).toEqual({ error: { code: "invalid-request" } });
+  }
+  for (const body of ["{}", '{"comment":5}', "not json"]) {
+    const response = await put(app, `/api/marks/${created.id}/comment`, body);
+    expect(response.status, body).toBe(400);
+    expect(await response.json()).toEqual({ error: { code: "invalid-request" } });
+  }
+  for (const id of [UNKNOWN, "not-a-uuid"]) {
+    const responses = [
+      await put(app, `/api/marks/${id}/kind`, '{"kind":"like"}'),
+      await put(app, `/api/marks/${id}/comment`, '{"comment":"x"}'),
+      await localRequest(app, `/api/marks/${id}`, { method: "DELETE" }),
+    ];
+    for (const response of responses) {
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({ error: { code: "not-found" } });
+    }
+  }
+  const big = await put(app, `/api/marks/${created.id}/comment`, "x".repeat(128 * 1024 + 1));
+  expect(big.status).toBe(413);
+  expect(await big.json()).toEqual({ error: { code: "too-large" } });
+});
+
+test("CA-4.6 DELETE /api/marks/:id removes the mark", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  const first = MarkSchema.parse(await (await postMark(app, image.id)).json());
+  const second = MarkSchema.parse(await (await postMark(app, image.id)).json());
+  const removed = await localRequest(app, `/api/marks/${first.id}`, { method: "DELETE" });
+  expect(removed.status).toBe(204);
+  expect(await listedMarks(app)).toEqual([second]);
+  const again = await localRequest(app, `/api/marks/${first.id}`, { method: "DELETE" });
+  expect(again.status).toBe(404);
+});
+
+test("CA-0.11 the mark routes are behind the local-only guard", async () => {
+  const app = makeApp();
+  const image = await uploaded(app);
+  const created = MarkSchema.parse(await (await postMark(app, image.id)).json());
+  const requests: [string, string, BodyInit | undefined][] = [
+    ["POST", `/api/images/${image.id}/marks?${MARK_QUERY}`, new Uint8Array(CROP)],
+    ["PUT", `/api/marks/${created.id}/kind`, '{"kind":"dislike"}'],
+    ["PUT", `/api/marks/${created.id}/comment`, '{"comment":"x"}'],
+    ["DELETE", `/api/marks/${created.id}`, undefined],
+  ];
+  for (const [method, path, body] of requests) {
+    const response = await app.request(`http://evil.example${path}`, {
+      method,
+      headers: { host: "evil.example", "content-type": "application/json" },
+      body,
+    });
+    expect(response.status, `${method} ${path}`).toBe(403);
+  }
+  expect(await listedMarks(app)).toEqual([created]);
 });

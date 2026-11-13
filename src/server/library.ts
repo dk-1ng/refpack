@@ -6,7 +6,13 @@ import { z } from "zod";
 import { MAX_IMAGE_BYTES } from "../shared/api.ts";
 import { type ImageType, sniffImageType } from "./image-type.ts";
 
-export type Library = { root: string; imagesDir: string; packsDir: string; db: DatabaseSync };
+export type Library = {
+  root: string;
+  imagesDir: string;
+  packsDir: string;
+  marksDir: string;
+  db: DatabaseSync;
+};
 export type StoredImage = {
   id: string;
   originalName: string;
@@ -59,7 +65,7 @@ export function openLibrary(root: string): Library {
   mkdirSync(imagesDir, { recursive: true });
   const db = new DatabaseSync(join(root, "library.db"));
   migrate(db);
-  return { root, imagesDir, packsDir: join(root, "packs"), db };
+  return { root, imagesDir, packsDir: join(root, "packs"), marksDir: join(root, "marks"), db };
 }
 
 export function closeLibrary(library: Library): void {

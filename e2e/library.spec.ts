@@ -11,6 +11,15 @@ test.beforeEach(async () => {
   workDir = await mkdtemp(join(tmpdir(), "refpack-files-"));
 });
 
+// CA-4.15: page.waitForEvent("filechooser") turns Playwright's file chooser interception off
+// as soon as it has its event. Firefox decides between Playwright's stand-in picker and its
+// real one a moment later, when the picker is created; if the switch wins, the real picker
+// opens, never closes, and the button cannot open another one. A listener that lives as long
+// as the page keeps interception on between choices.
+test.beforeEach(async ({ page }) => {
+  page.on("filechooser", () => {});
+});
+
 test.afterEach(async () => {
   await rm(workDir, { recursive: true, force: true, maxRetries: 5 });
 });
@@ -28,7 +37,7 @@ function gridAlts(page: Page): Promise<string[]> {
     .evaluateAll((imgs) => imgs.map((i) => i.getAttribute("alt") ?? ""));
 }
 
-test("CA-0.3 chosen images appear in the grid, newest first, without reloading", async ({
+test("CA-0.3 CA-4.14 chosen images appear in the grid, newest first, without reloading", async ({
   page,
   app,
 }) => {
@@ -42,10 +51,11 @@ test("CA-0.3 chosen images appear in the grid, newest first, without reloading",
   const images = page.getByRole("list").getByRole("img");
   await expect(images).toHaveCount(3);
   expect(await gridAlts(page)).toEqual(["c.webp", "b.jpg", "a.png"]);
-  const widths = await images.evaluateAll((imgs) =>
-    imgs.map((i) => (i as HTMLImageElement).naturalWidth),
-  );
-  for (const width of widths) expect(width).toBeGreaterThan(0);
+  for (const image of await images.all()) {
+    await expect
+      .poll(() => image.evaluate((img) => (img as HTMLImageElement).naturalWidth))
+      .toBeGreaterThan(0);
+  }
   await expect(page.getByText("Your library is empty. Add your first image.")).toHaveCount(0);
 });
 
@@ -119,7 +129,7 @@ test("CA-0.6 the same images are there, in the same order, after closing and ope
   expect(await gridAlts(page)).toEqual(before);
 });
 
-test("the same file added twice appears twice", async ({ page, app }) => {
+test("CA-4.15 the same file added twice appears twice", async ({ page, app }) => {
   await page.goto(app.url);
   const file = await makeImageFile(page, workDir, "a.png", "image/png");
   await choose(page, [file]);

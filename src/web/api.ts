@@ -1,19 +1,32 @@
 import {
+  type Area,
   ErrorSchema,
   type Image,
   ImageListSchema,
   ImageSchema,
   IntentSchema,
+  type Mark,
+  type MarkKind,
+  MarkSchema,
   type PackCreated,
   PackCreatedSchema,
 } from "../shared/api.ts";
 
-export async function fetchImages(): Promise<Image[]> {
+// null when the answer arrived but is not the list this screen expects: the running refpack
+// is another version (CA-4.13). Still throws when the status is not 2xx.
+export async function fetchImages(): Promise<Image[] | null> {
   const response = await fetch("/api/images");
   if (!response.ok) {
     throw new Error(`GET /api/images failed with status ${response.status}`);
   }
-  return ImageListSchema.parse(await response.json()).images;
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return null;
+  }
+  const parsed = ImageListSchema.safeParse(body);
+  return parsed.success ? parsed.data.images : null;
 }
 
 export type UploadResult =
@@ -116,6 +129,72 @@ export async function saveNote(id: string, note: string): Promise<boolean> {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ note }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+// The area goes in the address and the crop, a PNG, is the body. null when the mark was not
+// created: any status that is not 2xx, an answer that is not a mark, or a network error.
+export async function createMark(
+  imageId: string,
+  kind: MarkKind,
+  area: Area,
+  crop: Blob,
+): Promise<Mark | null> {
+  try {
+    const query = new URLSearchParams({
+      kind,
+      left: String(area.left),
+      top: String(area.top),
+      right: String(area.right),
+      bottom: String(area.bottom),
+    });
+    const response = await fetch(`/api/images/${encodeURIComponent(imageId)}/marks?${query}`, {
+      method: "POST",
+      headers: { "content-type": "image/png" },
+      body: crop,
+    });
+    if (!response.ok) return null;
+    const parsed = MarkSchema.safeParse(await response.json());
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveMarkComment(markId: string, comment: string): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/marks/${encodeURIComponent(markId)}/comment`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ comment }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function saveMarkKind(markId: string, kind: MarkKind): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/marks/${encodeURIComponent(markId)}/kind`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteMark(markId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/marks/${encodeURIComponent(markId)}`, {
+      method: "DELETE",
     });
     return response.ok;
   } catch {

@@ -91,7 +91,7 @@ test("CA-3.8 starting another pack keeps every note", async ({ page, app }) => {
   await drop(page, [a]);
   await expect(images(page)).toHaveCount(1);
   const item = page.getByRole("listitem").filter({ has: page.getByAltText("a.png") });
-  await item.getByRole("button", { name: "Note" }).click();
+  await item.getByRole("button", { name: "Annotate" }).click();
   const viewer = page.getByRole("dialog");
   const note = viewer.getByLabel("Note on this image");
   await note.fill("keep me");
@@ -110,11 +110,57 @@ test("CA-3.8 starting another pack keeps every note", async ({ page, app }) => {
   await expect.poll(() => message).not.toBe("");
   await expect(page.getByText("0 of 1 selected")).toBeVisible();
   await expect(item.getByTitle("Has a note")).toBeVisible();
-  await item.getByRole("button", { name: "Note" }).click();
+  await item.getByRole("button", { name: "Annotate" }).click();
   await expect(note).toHaveValue("keep me");
   await viewer.getByRole("button", { name: "Close" }).click();
   await expect(viewer).toHaveCount(0);
 
   await page.reload();
   await expect(item.getByTitle("Has a note")).toBeVisible();
+});
+
+test("CA-4.10 starting another pack keeps every mark", async ({ page, app }) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await expect(images(page)).toHaveCount(1);
+  const item = page.getByRole("listitem").filter({ has: page.getByAltText("a.png") });
+  await item.getByRole("button", { name: "Annotate" }).click();
+  const viewer = page.getByRole("dialog");
+  const picture = viewer.getByRole("img");
+  await expect(picture).toBeVisible();
+  await expect
+    .poll(() => picture.evaluate((img) => getComputedStyle(img).getPropertyValue("--ratio").trim()))
+    .not.toBe("");
+  const area = await picture.boundingBox();
+  if (area === null) throw new Error("the open image has no box");
+  await page.mouse.move(area.x + 0.1 * area.width, area.y + 0.1 * area.height);
+  await page.mouse.down();
+  await page.mouse.move(area.x + 0.4 * area.width, area.y + 0.4 * area.height, { steps: 5 });
+  await page.mouse.up();
+  await viewer.getByRole("button", { name: "Like", exact: true }).click();
+  const comment = viewer.getByLabel("Comment on mark 1");
+  await expect(comment).toBeEnabled();
+  await comment.fill("keep me");
+  await expect(viewer.getByRole("listitem").getByRole("status")).toHaveText("Saved");
+  await viewer.getByRole("button", { name: "Close" }).click();
+  await expect(viewer).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "a.png" }).click();
+  await expect(page.getByText("1 of 1 selected")).toBeVisible();
+
+  let message = "";
+  page.once("dialog", (dialog) => {
+    message = dialog.message();
+    void dialog.accept();
+  });
+  await page.getByRole("button", { name: "Start another pack" }).click();
+  await expect.poll(() => message).not.toBe("");
+  await expect(page.getByText("0 of 1 selected")).toBeVisible();
+  await expect(item.getByTitle("Marks: 1")).toBeVisible();
+  await item.getByRole("button", { name: "Annotate" }).click();
+  await expect(viewer.getByLabel("Comment on mark 1")).toHaveValue("keep me");
+  await viewer.getByRole("button", { name: "Close" }).click();
+  await expect(viewer).toHaveCount(0);
+
+  await page.reload();
+  await expect(item.getByTitle("Marks: 1")).toBeVisible();
 });

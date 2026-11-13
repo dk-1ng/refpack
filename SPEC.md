@@ -447,11 +447,165 @@ Os testes automáticos rodam no Chromium e no Firefox (ADR-0010). O teste manual
 - Buscar ou filtrar imagens pelo texto da nota.
 - Adicionar imagens com uma imagem aberta (CA-3.10).
 
-## 10. Depois
+## 10. Fatia 4 — marcar partes
+
+**O que eu consigo fazer ao final:** abrir uma imagem, desenhar um retângulo sobre uma parte dela, dizer se é "gosto" ou "não gosto" e escrever um comentário; o pacote sai com o recorte de cada marcação, o tipo e o comentário.
+
+O que vale para as fatias 0 a 3 continua valendo, com as mudanças listadas em "O que muda nos critérios anteriores". Tudo o que não está listado abaixo fica fora desta fatia.
+
+### Definições desta fatia
+
+- **Marcação:** uma área retangular de uma imagem, com um tipo e um comentário. Uma imagem pode ter várias, e elas podem se sobrepor.
+- **Tipo:** "gosto" ou "não gosto". Toda marcação tem um; sou eu que escolho, nunca a ferramenta.
+- **Comentário:** um texto livre sobre a área marcada. É opcional. Tem até 2 000 caracteres; a caixa não aceita mais que isso.
+- **Comentário vazio:** sem nenhum caractere, ou só com espaços e quebras de linha.
+- **Número da marcação:** as marcações de uma imagem são numeradas 1, 2, 3… na ordem em que foram criadas. Quando uma é apagada, as seguintes sobem um número.
+- **Recorte:** um arquivo de imagem só com a área marcada, tirado da imagem original, sem reduzir. É sempre um PNG, qualquer que seja o formato da imagem.
+- **A marcação é da imagem**, como a nota: fica guardada com a imagem até eu mudar ou apagar e vale para todos os pacotes em que a imagem entrar.
+
+### Critérios de aceite
+
+**CA-4.1 Desenhar uma área**
+- Dado que uma imagem está aberta,
+- quando eu aperto o botão do mouse sobre a imagem, arrasto e solto,
+- então um retângulo acompanha o mouse enquanto eu arrasto e fica na imagem quando eu solto, à espera do tipo (CA-4.2).
+- Se eu arrasto para fora da imagem, o retângulo para na borda dela.
+- Um clique sem arrastar, ou um arrasto com menos de 10 pixels de largura ou de altura na tela, não cria nada.
+- Arrastar sobre a imagem aberta só desenha: a imagem não sai do lugar nem fica azul, como se fosse um texto selecionado.
+- Eu posso começar um retângulo em cima de outro que já existe.
+
+**CA-4.2 Dizer se é "gosto" ou "não gosto"**
+- Dado que eu acabei de desenhar um retângulo,
+- quando eu clico em "Gosto" ou em "Não gosto",
+- então a marcação passa a existir: é guardada sozinha, aparece na imagem e na lista ao lado com o seu número e o seu tipo, e o cursor vai para a caixa de comentário dela.
+- Se eu clico em "Cancelar", desenho outro retângulo, fecho a imagem ou passo para outra sem escolher o tipo, o retângulo some e nada é guardado.
+
+**CA-4.3 Ver as marcações de uma imagem**
+- Dado que uma imagem tem marcações,
+- quando eu a abro,
+- então cada marcação aparece como um retângulo sobre a imagem, no lugar em que eu desenhei, com o seu número; ao lado da imagem, uma lista traz cada marcação com o número, o tipo e o comentário.
+- "Gosto" e "não gosto" são diferentes pela cor e também por um sinal ou palavra: dá para saber qual é qual sem depender da cor.
+- A caixa da nota continua lá, e o cursor começa nela, como no CA-3.1.
+
+**CA-4.4 Escrever o comentário**
+- Dado que uma imagem aberta tem marcações,
+- quando eu escrevo na caixa de comentário de uma delas,
+- então o texto é guardado sozinho, sem botão de salvar, e a tela mostra que foi guardado.
+- O texto fica exatamente como eu digitei: acentos, emojis, quebras de linha e espaços.
+- O que eu digitei até o instante de fechar a imagem ou de passar para outra fica guardado.
+
+**CA-4.5 Trocar o tipo**
+- Dado que uma marcação existe,
+- quando eu troco o tipo dela na lista, de "gosto" para "não gosto" ou o contrário,
+- então a mudança é guardada sozinha e aparece na lista e no retângulo; o comentário e a área não mudam.
+
+**CA-4.6 Apagar uma marcação**
+- Dado que uma marcação existe,
+- quando eu clico em "Apagar" nela,
+- então ela some da imagem e da lista, e as seguintes sobem um número.
+- Se o comentário dela não está vazio, a tela pede confirmação antes, porque o meu texto é apagado. Se eu cancelo, nada muda.
+- Apagar uma marcação não mexe na nota, nas outras marcações nem na seleção da imagem.
+
+**CA-4.7 Sinal de marcação na grade**
+- Dado que uma imagem tem pelo menos uma marcação,
+- quando eu olho a grade,
+- então essa imagem mostra um sinal pequeno com a quantidade de marcações; as imagens sem marcação não mostram.
+- O sinal muda sem eu recarregar a página, conforme eu crio ou apago marcações. O sinal de nota (CA-3.5) continua como está.
+
+**CA-4.8 Fechar e voltar**
+- Dado que eu fiz marcações,
+- quando eu fecho o refpack e abro de novo,
+- então cada imagem traz as mesmas marcações, com a mesma área, o mesmo tipo, o mesmo comentário e a mesma ordem, e a grade mostra os mesmos sinais.
+
+**CA-4.9 As marcações saem no pacote**
+- Dado que uma imagem selecionada tem marcações,
+- quando o pacote é gerado,
+- então ele traz, na pasta `marks/`, para cada marcação:
+  - o recorte, nomeado com o número da imagem e o número da marcação (`marks/01-2.png` é a marcação 2 de `refs/01.png`);
+  - se o comentário não está vazio, um arquivo com o mesmo nome (`marks/01-2.md`), com o meu texto exatamente como digitei e sem nada acrescentado.
+- O `README.md` mostra, embaixo de cada referência, as marcações dela: o número, o tipo (em inglês, "like" ou "dislike"), o arquivo do recorte, o arquivo do comentário quando existe, e onde a área fica na imagem, em porcentagem da largura e da altura.
+- O `README.md` diz ao agente, em inglês, que "like" é algo a aproveitar e "dislike" é algo a evitar, e avisa que os comentários são do dono e podem estar em outra língua.
+- Marcação sem comentário sai só com o recorte e a linha no `README.md`. Se nenhuma imagem selecionada tem marcação, o pacote não tem a pasta `marks/` e o `README.md` não fala dela.
+- As marcações de uma imagem que não está selecionada não entram no pacote.
+- O que eu acabei de digitar num comentário entra no pacote, mesmo que eu feche a imagem e clique em "Gerar pacote" logo em seguida.
+- No teste manual do dono, o Claude Code, ao ler a pasta, consegue dizer, para cada marcação, qual parte da imagem é, se é para aproveitar ou evitar, e o que o comentário pede.
+
+**CA-4.10 Começar outro pacote não apaga marcações**
+- Dado que há imagens com marcações,
+- quando eu clico em "Começar outro pacote" e confirmo,
+- então a seleção e a intenção ficam vazias, como no CA-2.10, e todas as marcações continuam como estavam.
+
+**CA-4.11 A tela ficou aberta com o refpack parado**
+- Dado que eu parei o refpack no terminal e a tela continuou aberta no navegador, com uma imagem aberta,
+- quando eu desenho um retângulo e escolho o tipo, troco o tipo de uma marcação ou apago uma,
+- então a tela avisa, na língua da tela, que não conseguiu guardar, e as marcações continuam como estavam antes: a nova não aparece, o tipo não muda, a apagada continua lá.
+- Quando eu escrevo num comentário, vale o mesmo do CA-3.9 para a nota: o aviso aparece, o texto continua na caixa sem a indicação de guardado, e a tela pergunta antes de eu sair da imagem sem guardar.
+
+**CA-4.12 Imagem adicionada logo que a tela abre**
+- Dado que a tela acabou de abrir e a lista de imagens ainda não carregou,
+- quando eu colo ou solto uma imagem,
+- então ela aparece uma vez só na grade.
+
+**CA-4.13 Tela e refpack em versões diferentes**
+- Dado que o refpack foi atualizado e eu rodei `pnpm start` sem parar o que já estava rodando (a tela é a nova, o refpack ainda é o antigo),
+- quando a tela abre,
+- então ela mostra um aviso, na língua da tela, de que a tela e o refpack estão em versões diferentes e de que é preciso parar o refpack no terminal e rodar `pnpm start` de novo.
+- A tela não fica em branco nem mostra o convite de biblioteca vazia.
+
+**CA-4.14 O teste de adicionar imagens não falha à toa**
+- Dado o código da fatia,
+- quando o CI roda,
+- então o teste do CA-0.3 espera as imagens terminarem de carregar antes de medi-las.
+- É conferido pelo CI, não na tela.
+
+**CA-4.15 O teste de adicionar o mesmo arquivo duas vezes não falha à toa**
+- Dado o código da fatia,
+- quando o CI roda,
+- então o teste "o mesmo arquivo adicionado duas vezes aparece duas vezes" passa sempre no Firefox, também com a máquina lenta. A causa da falha de vez em quando é encontrada e corrigida, sem tratamento especial por navegador.
+- É conferido pelo CI, não na tela.
+
+**CA-4.16 Os testes do pacote e da intenção não falham à toa**
+- Dado o código da fatia,
+- quando o CI roda,
+- então os testes unitários que gravam arquivos têm tempo para terminar também na máquina Windows lenta, com o mesmo limite em todos os sistemas (ADR-0016);
+- e o teste "texto digitado tecla a tecla é salvo inteiro e em ordem" (CA-2.4) passa sempre, também com a máquina lenta. A causa da falha de vez em quando é encontrada; se for um defeito da tela, ele é corrigido.
+- É conferido pelo CI, não na tela.
+
+### O que muda nos critérios anteriores
+
+- **CA-3.1:** o botão de cada imagem na grade passa a se chamar "Anotar" (em inglês, "Annotate"), porque agora abre a imagem para a nota e para as marcações.
+- **CA-3.3 e CA-3.4:** ao fechar a imagem ou passar para outra, os comentários digitados também ficam guardados (CA-4.4), e um retângulo ainda sem tipo é descartado (CA-4.2).
+- **CA-3.9:** a pergunta antes de sair sem guardar vale também para um comentário que não foi guardado (CA-4.11).
+- **CA-3.10:** colar um texto com o cursor numa caixa de comentário põe o texto na caixa, como na caixa da nota.
+- **CA-0.7, CA-2.6 e CA-3.7:** além das imagens, da intenção e das notas, o pacote leva as marcações das imagens selecionadas (CA-4.9).
+- **CA-2.10 e CA-3.8:** "Começar outro pacote" não apaga marcações (CA-4.10).
+- **CA-0.3, CA-1.2, CA-1.3 e CA-1.6:** uma imagem adicionada antes de a lista carregar aparece uma vez só (CA-4.12).
+
+### Como estes critérios são conferidos
+
+Os testes automáticos rodam no Chromium e no Firefox (ADR-0010) e simulam o arrastar do mouse sobre a imagem aberta. O recorte é conferido com imagens fabricadas pelo teste, de cores conhecidas.
+
+O teste manual do dono é feito no Firefox, com o mouse de verdade, e termina pedindo ao Claude Code que leia o pacote gerado.
+
+### Fora desta fatia, de propósito
+
+- Mover ou redimensionar uma marcação: para mudar a área, eu apago e desenho de novo.
+- Formas que não sejam retângulo.
+- Uma cópia da imagem inteira com os retângulos desenhados, dentro do pacote.
+- Marcações que valem só para um pacote.
+- Tipos além de "gosto" e "não gosto".
+- Mudar a ordem das marcações.
+- Desfazer o "Apagar".
+- Marcar pelo teclado, sem mouse.
+- Ampliar a imagem aberta além do tamanho da tela (zoom).
+- Ver os retângulos na grade: a grade mostra só o sinal com a quantidade.
+- Etiquetas (fatia 5).
+
+## 11. Depois
 
 O que é parte da visão mas não cabe na fatia atual vai para a lista "Depois", que vive em um lugar só: o `ROADMAP.md`. Nada dessa lista é construído sem antes virar fatia, por decisão do dono.
 
-## 11. Fora do escopo
+## 12. Fora do escopo
 
 - Contas, login, nuvem, vários usuários.
 - Celular.
