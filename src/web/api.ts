@@ -10,6 +10,8 @@ import {
   MarkSchema,
   type PackCreated,
   PackCreatedSchema,
+  type Tag,
+  TagSchema,
 } from "../shared/api.ts";
 
 // null when the answer arrived but is not the list this screen expects: the running refpack
@@ -196,6 +198,36 @@ export async function deleteMark(markId: string): Promise<boolean> {
     const response = await fetch(`/api/marks/${encodeURIComponent(markId)}`, {
       method: "DELETE",
     });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+// The tag the server stored (its name may differ in case from `name`). null with any status
+// that is not 2xx, an answer that is not a tag, or a network error.
+export async function addTag(imageId: string, name: string): Promise<Tag | null> {
+  try {
+    const response = await fetch(`/api/images/${encodeURIComponent(imageId)}/tags`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) return null;
+    const parsed = TagSchema.safeParse(await response.json());
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+// True with a 2xx answer.
+export async function removeTag(imageId: string, tagId: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `/api/images/${encodeURIComponent(imageId)}/tags/${encodeURIComponent(tagId)}`,
+      { method: "DELETE" },
+    );
     return response.ok;
   } catch {
     return false;

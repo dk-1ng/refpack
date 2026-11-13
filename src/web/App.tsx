@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import type { Image, Mark } from "../shared/api.ts";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Image, Mark, Tag } from "../shared/api.ts";
 import { fetchImages, setAllSelected, setImageSelected } from "./api.ts";
 import { LANGUAGES, type Language, type Notice, useI18n } from "./i18n/index.tsx";
 import { AddImages } from "./library/AddImages.tsx";
@@ -10,6 +10,7 @@ import { ImageViewer } from "./note/ImageViewer.tsx";
 import { IntentBox } from "./pack/IntentBox.tsx";
 import { PackPanel } from "./pack/PackPanel.tsx";
 import { useIntent } from "./pack/use-intent.ts";
+import { libraryTags } from "./tags/tags.ts";
 
 export function App() {
   const { language, setLanguage, t } = useI18n();
@@ -79,6 +80,17 @@ export function App() {
       ),
     [],
   );
+
+  const tagsChanged = useCallback(
+    (id: string, change: (tags: Tag[]) => Tag[]) =>
+      setImages((current) =>
+        current === null
+          ? current
+          : current.map((item) => (item.id === id ? { ...item, tags: change(item.tags) } : item)),
+      ),
+    [],
+  );
+  const allTags = useMemo(() => libraryTags(images ?? []), [images]);
 
   const startOver = useCallback(async () => {
     if (!window.confirm(t("pack.confirmStartOver"))) return;
@@ -188,6 +200,8 @@ export function App() {
           onClose={() => setOpenId(null)}
           onSaved={noteSaved}
           onMarks={marksChanged}
+          allTags={allTags}
+          onTags={tagsChanged}
         />
       ) : null}
     </main>

@@ -5,12 +5,14 @@ import {
   MAX_NOTE_LENGTH,
   type Mark,
   type MarkKind,
+  type Tag,
 } from "../../shared/api.ts";
-import { createMark, deleteMark, saveMarkKind } from "../api.ts";
+import { addTag, createMark, deleteMark, removeTag, saveMarkKind } from "../api.ts";
 import { useI18n } from "../i18n/index.tsx";
 import { cropToPng } from "../marks/crop.ts";
 import { ImageStage } from "../marks/ImageStage.tsx";
 import { MarkPanel } from "../marks/MarkPanel.tsx";
+import { TagPanel } from "../tags/TagPanel.tsx";
 import { useNote } from "./use-note.ts";
 
 export function ImageViewer({
@@ -21,6 +23,8 @@ export function ImageViewer({
   onClose,
   onSaved,
   onMarks,
+  allTags,
+  onTags,
 }: {
   image: Image;
   previousId: string | null;
@@ -29,6 +33,8 @@ export function ImageViewer({
   onClose: () => void;
   onSaved: (id: string, note: string) => void;
   onMarks: (id: string, change: (marks: Mark[]) => Mark[]) => void;
+  allTags: Tag[];
+  onTags: (id: string, change: (tags: Tag[]) => Tag[]) => void;
 }) {
   const { t } = useI18n();
   const note = useNote(image.id, image.note, onSaved);
@@ -124,6 +130,20 @@ export function ImageViewer({
     }
   }
 
+  // The screen shows a tag only once the server has it (ADR-0012).
+  async function addTagToImage(name: string): Promise<boolean> {
+    const tag = await addTag(image.id, name);
+    if (tag === null) return false;
+    onTags(image.id, (tags) => (tags.some((item) => item.id === tag.id) ? tags : [...tags, tag]));
+    return true;
+  }
+
+  async function removeTagFromImage(tagId: string): Promise<boolean> {
+    if (!(await removeTag(image.id, tagId))) return false;
+    onTags(image.id, (tags) => tags.filter((item) => item.id !== tagId));
+    return true;
+  }
+
   return (
     <dialog
       ref={dialogRef}
@@ -156,6 +176,12 @@ export function ImageViewer({
           {note.saveState === "saved" ? t("intent.saved") : null}
           {note.saveState === "failed" ? t("error.notSaved") : null}
         </span>
+        <TagPanel
+          tags={image.tags}
+          all={allTags}
+          onAdd={addTagToImage}
+          onRemove={removeTagFromImage}
+        />
         <MarkPanel
           marks={image.marks}
           pending={pending}

@@ -164,3 +164,36 @@ test("CA-4.10 starting another pack keeps every mark", async ({ page, app }) => 
   await page.reload();
   await expect(item.getByTitle("Marks: 1")).toBeVisible();
 });
+
+test("CA-5.12 starting another pack keeps every tag", async ({ page, app }) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await expect(images(page)).toHaveCount(1);
+  const item = page.getByRole("listitem").filter({ has: page.getByAltText("a.png") });
+  const chips = item.locator(".tag-chip");
+  await item.getByRole("button", { name: "Annotate" }).click();
+  const viewer = page.getByRole("dialog");
+  await viewer.getByLabel("New tag").fill("keep");
+  await viewer.getByLabel("New tag").press("Enter");
+  await expect(
+    viewer.getByRole("list", { name: "Tags on this image" }).locator("li > span"),
+  ).toHaveText(["keep"]);
+  await viewer.getByRole("button", { name: "Close" }).click();
+  await expect(viewer).toHaveCount(0);
+  await expect(chips).toHaveText(["keep"]);
+  await page.getByRole("checkbox", { name: "a.png" }).click();
+  await expect(page.getByText("1 of 1 selected")).toBeVisible();
+
+  let message = "";
+  page.once("dialog", (dialog) => {
+    message = dialog.message();
+    void dialog.accept();
+  });
+  await page.getByRole("button", { name: "Start another pack" }).click();
+  await expect.poll(() => message).not.toBe("");
+  await expect(page.getByText("0 of 1 selected")).toBeVisible();
+  await expect(chips).toHaveText(["keep"]);
+
+  await page.reload();
+  await expect(chips).toHaveText(["keep"]);
+});
