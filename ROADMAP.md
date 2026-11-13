@@ -12,8 +12,8 @@ Só a próxima fatia é detalhada (critérios de aceite no `SPEC.md`, tarefas em
 | 1 | Colar e arrastar | Colar um screenshot da área de transferência e arrastar arquivos para a tela; eles entram na biblioteca como os escolhidos pelo botão. | feita |
 | 2 | Escolher e dizer a intenção | Escolher quais imagens entram no pacote e escrever a intenção do projeto, que sai no pacote. | feita |
 | 3 | Nota geral | Escrever uma nota em cada imagem; ela salva sozinha, fica exatamente como escrevi e sai no pacote. | feita |
-| 4 | Marcar partes | Marcar áreas de uma imagem com "gosto" ou "não gosto" e um comentário; o pacote traz o recorte de cada marcação. | próxima |
-| 5 | Etiquetas | Etiquetar imagens e filtrar a grade por etiqueta. | roteiro |
+| 4 | Marcar partes | Marcar áreas de uma imagem com "gosto" ou "não gosto" e um comentário; o pacote traz o recorte de cada marcação. | feita |
+| 5 | Etiquetas | Etiquetar imagens e filtrar a grade por etiqueta. | próxima |
 | 6 | Entrada em volume | Importar uma pasta inteira; a grade continua rápida com milhares de imagens. | roteiro |
 | 7 | Sugestões da IA | Pedir ao Claude Code que descreva as imagens novas e revisar cada sugestão: aceitar, corrigir ou rejeitar. | roteiro |
 | 8 | Famílias | Receber famílias estéticas propostas pela IA, aprovar, renomear ou desfazer, e montar um pacote a partir de uma delas. | roteiro |
