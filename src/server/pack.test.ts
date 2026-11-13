@@ -12,6 +12,7 @@ import {
 } from "./library.ts";
 import { addMark, deleteMark, listMarks, setMarkComment } from "./marks.ts";
 import { createPack, packFolderName, refNumber } from "./pack.ts";
+import { addTag, listTags } from "./tags.ts";
 import { JPEG_BYTES, PNG_BYTES, tempLibraryRoot, WEBP_BYTES } from "./test-support.ts";
 
 const libraries: Library[] = [];
@@ -104,15 +105,18 @@ test("CA-0.9 CA-2.9 generating a pack leaves the library unchanged", () => {
   });
   if (!added.ok) throw new Error("expected ok");
   setMarkComment(library, added.mark.id, "a comment on a mark");
+  addTag(library, bId, "dashboard");
   const before = {
     images: listImages(library),
     marks: listMarks(library),
+    tags: listTags(library),
     files: readdirSync(library.imagesDir).sort(),
     crops: readdirSync(library.marksDir).sort(),
   };
   createPack(library, now);
   expect(listImages(library)).toEqual(before.images);
   expect(listMarks(library)).toEqual(before.marks);
+  expect(listTags(library)).toEqual(before.tags);
   expect(readdirSync(library.marksDir).sort()).toEqual(before.crops);
   expect(readdirSync(library.imagesDir).sort()).toEqual(before.files);
 });
@@ -395,4 +399,71 @@ test("CA-4.9 without marks on the selected images the pack has no marks folder a
   if (!result.ok) throw new Error("expected ok");
   expect(existsSync(join(result.path, "marks"))).toBe(false);
   expect(readFileSync(join(result.path, "README.md"), "utf8")).not.toContain("mark");
+});
+
+const FANCY = 'Dashboard "escuro" \\ ✨';
+const TAGS_LINE =
+  "Some references have tags: short labels the owner put on the image, listed after `tags:` on its line below, each in double quotes. They are in the owner's own words and may be in a language other than English. References that share a tag have that kind or quality in common.";
+
+test("CA-5.11 the README lists each selected image's tags, in order and exactly as written, with its note and marks", () => {
+  const library = makeLibrary();
+  fillLibrary(library);
+  setAllSelected(library, true);
+  setIntent(library, INTENT);
+  const [, b, a] = listImages(library);
+  setNote(library, b?.id ?? "", NOTE);
+  addTag(library, b?.id ?? "", FANCY);
+  addTag(library, b?.id ?? "", "tabela");
+  addTag(library, a?.id ?? "", "ícone ✨");
+  addMark(library, b?.id ?? "", {
+    kind: "like",
+    area: { left: 0.1, top: 0.2, right: 0.4, bottom: 0.9 },
+    crop: PNG_BYTES,
+  });
+  const result = createPack(library, now);
+  if (!result.ok) throw new Error("expected ok");
+  expect(readFileSync(join(result.path, "README.md"), "utf8")).toBe(
+    [
+      "# Reference pack",
+      "",
+      "This folder is a set of design references exported from refpack.",
+      "Use the images in `refs/` as visual references for the interface you are asked to build.",
+      "",
+      INTENT_LINE,
+      "",
+      NOTES_LINE,
+      "",
+      MARKS_LINE,
+      "",
+      TAGS_LINE,
+      "",
+      "- Created: 2026-11-09 14:05:09",
+      "- References: 3",
+      "",
+      "## References",
+      "",
+      "1. `refs/01.webp`",
+      `2. \`refs/02.jpg\` — note: \`notes/02.md\` — tags: ${JSON.stringify(FANCY)}, "tabela"`,
+      "   - Mark 1 (like): `marks/02-1.png` — area: x 10%–40%, y 20%–90%",
+      '3. `refs/03.png` — tags: "ícone ✨"',
+      "",
+    ].join("\n"),
+  );
+});
+
+test("CA-5.11 tags of unselected images stay out, and without tags the README does not mention them", () => {
+  const library = makeLibrary();
+  fillLibrary(library);
+  const [, b, a] = listImages(library);
+  setSelected(library, a?.id ?? "", true);
+  addTag(library, b?.id ?? "", "x");
+  const result = createPack(library, now);
+  if (!result.ok) throw new Error("expected ok");
+  const readme = readFileSync(join(result.path, "README.md"), "utf8");
+  expect(readme).not.toContain("tag");
+  expect(readme).toBe(
+    expectedReadme(false)
+      .replace("- References: 3", "- References: 1")
+      .replace("1. `refs/01.webp`\n2. `refs/02.jpg`\n3. `refs/03.png`", "1. `refs/01.png`"),
+  );
 });
