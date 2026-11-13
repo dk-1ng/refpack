@@ -17,6 +17,9 @@ import {
   MarkKindSchema,
   NoteSchema,
   SelectedBodySchema,
+  SelectionBodySchema,
+  TagBodySchema,
+  TagSchema,
 } from "../shared/api.ts";
 import { getIntent, setAllSelected, setIntent, setSelected } from "./draft.ts";
 import { localOnly } from "./guard.ts";
@@ -37,6 +40,7 @@ import {
   setMarkKind,
 } from "./marks.ts";
 import { createPack } from "./pack.ts";
+import { addTag, listTags, removeTag, type StoredTag } from "./tags.ts";
 
 const MAX_TEXT_REQUEST_BYTES = 128 * 1024;
 
@@ -50,7 +54,7 @@ function errorBody(code: ErrorCode): { error: { code: ErrorCode } } {
   return { error: { code } };
 }
 
-function toImage(image: StoredImage, marks: StoredMark[]): Image {
+function toImage(image: StoredImage, marks: StoredMark[], tags: StoredTag[]): Image {
   return {
     id: image.id,
     originalName: image.originalName,
@@ -63,6 +67,7 @@ function toImage(image: StoredImage, marks: StoredMark[]): Image {
       area: mark.area,
       comment: mark.comment,
     })),
+    tags: tags.map((tag) => ({ id: tag.id, name: tag.name })),
   };
 }
 
@@ -112,8 +117,11 @@ export function createApp(deps: AppDeps): Hono {
 
   app.get("/api/images", (c) => {
     const marks = listMarks(library);
+    const tags = listTags(library);
     return c.json({
-      images: listImages(library).map((image) => toImage(image, marks.get(image.id) ?? [])),
+      images: listImages(library).map((image) =>
+        toImage(image, marks.get(image.id) ?? [], tags.get(image.id) ?? []),
+      ),
     });
   });
 
@@ -132,7 +140,7 @@ export function createApp(deps: AppDeps): Hono {
           ? c.json(errorBody("too-large"), 413)
           : c.json(errorBody("unsupported-type"), 415);
       }
-      return c.json(toImage(result.image, []), 201);
+      return c.json(toImage(result.image, [], []), 201);
     },
   );
 
@@ -195,6 +203,28 @@ export function createApp(deps: AppDeps): Hono {
     },
   );
 
+  app.post(
+    "/api/images/:id/tags",
+    bodyLimit({
+      maxSize: MAX_TEXT_REQUEST_BYTES,
+      onError: (c) => c.json(errorBody("too-large"), 413),
+    }),
+    async (c) => {
+      const parsed = TagBodySchema.safeParse(await readJson(c.req.raw));
+      if (!parsed.success) return c.json(errorBody("invalid-request"), 400);
+      const result = addTag(library, c.req.param("id"), parsed.data.name);
+      if (!result.ok) return c.json(errorBody("not-found"), 404);
+      return c.json(TagSchema.parse(result.tag), result.linked ? 201 : 200);
+    },
+  );
+
+  app.delete("/api/images/:id/tags/:tagId", (c) => {
+    if (!removeTag(library, c.req.param("id"), c.req.param("tagId"))) {
+      return c.json(errorBody("not-found"), 404);
+    }
+    return c.body(null, 204);
+  });
+
   app.put(
     "/api/marks/:id/kind",
     bodyLimit({
@@ -233,9 +263,11 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   app.put("/api/draft/selection", async (c) => {
-    const selected = await readSelectedBody(c.req.raw);
-    if (selected === null) return c.json(errorBody("invalid-request"), 400);
-    setAllSelected(library, selected);
+    const parsed = SelectionBodySchema.safeParse(await readJson(c.req.raw));
+    if (!parsed.success) return c.json(errorBody("invalid-request"), 400);
+    if (!setAllSelected(library, parsed.data.selected, parsed.data.tagId)) {
+      return c.json(errorBody("not-found"), 404);
+    }
     return c.body(null, 204);
   });
 

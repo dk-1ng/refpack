@@ -31,6 +31,15 @@ export function ImageGrid({
               </span>
             ) : null}
           </button>
+          {image.tags.length > 0 ? (
+            <p className="image-tags">
+              {image.tags.map((tag) => (
+                <span key={tag.id} className="tag-chip">
+                  {tag.name}
+                </span>
+              ))}
+            </p>
+          ) : null}
         </li>
       ))}
     </ul>

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import type { Image, Mark } from "../shared/api.ts";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Image, Mark, Tag } from "../shared/api.ts";
 import { fetchImages, setAllSelected, setImageSelected } from "./api.ts";
 import { LANGUAGES, type Language, type Notice, useI18n } from "./i18n/index.tsx";
 import { AddImages } from "./library/AddImages.tsx";
@@ -10,6 +10,8 @@ import { ImageViewer } from "./note/ImageViewer.tsx";
 import { IntentBox } from "./pack/IntentBox.tsx";
 import { PackPanel } from "./pack/PackPanel.tsx";
 import { useIntent } from "./pack/use-intent.ts";
+import { TagFilter } from "./tags/TagFilter.tsx";
+import { libraryTags } from "./tags/tags.ts";
 
 export function App() {
   const { language, setLanguage, t } = useI18n();
@@ -20,10 +22,15 @@ export function App() {
   const openIndex = images?.findIndex((image) => image.id === openId) ?? -1;
   const openImage = images?.[openIndex] ?? null;
 
-  const addImage = useCallback(
-    (image: Image) => setImages((current) => [image, ...(current ?? [])]),
-    [],
-  );
+  const [filterTagId, setFilterTagId] = useState<string | null>(null);
+  const allTags = useMemo(() => libraryTags(images ?? []), [images]);
+  // CA-5.6: a tag that is gone turns the filter off.
+  const activeFilter = allTags.some((tag) => tag.id === filterTagId) ? filterTagId : null;
+
+  const addImage = useCallback((image: Image) => {
+    setImages((current) => [image, ...(current ?? [])]);
+    setFilterTagId(null); // CA-5.9
+  }, []);
   const refuse = useCallback(
     (notice: Notice) => setRefusals((current) => [...current, notice]),
     [],
@@ -48,16 +55,22 @@ export function App() {
   );
   const selectAll = useCallback(
     async (selected: boolean) => {
-      const saved = await setAllSelected(selected);
+      const saved = await setAllSelected(selected, activeFilter);
       if (!saved) {
         refuse({ key: "error.notSaved" });
         return;
       }
       setImages((current) =>
-        current === null ? current : current.map((item) => ({ ...item, selected })),
+        current === null
+          ? current
+          : current.map((item) =>
+              activeFilter === null || item.tags.some((tag) => tag.id === activeFilter)
+                ? { ...item, selected }
+                : item,
+            ),
       );
     },
-    [refuse],
+    [refuse, activeFilter],
   );
 
   const noteSaved = useCallback(
@@ -76,6 +89,16 @@ export function App() {
         current === null
           ? current
           : current.map((item) => (item.id === id ? { ...item, marks: change(item.marks) } : item)),
+      ),
+    [],
+  );
+
+  const tagsChanged = useCallback(
+    (id: string, change: (tags: Tag[]) => Tag[]) =>
+      setImages((current) =>
+        current === null
+          ? current
+          : current.map((item) => (item.id === id ? { ...item, tags: change(item.tags) } : item)),
       ),
     [],
   );
@@ -126,6 +149,14 @@ export function App() {
     };
   }, [refuse]);
 
+  const allImages = images ?? [];
+  const hasFilterTag = (image: Image) => image.tags.some((tag) => tag.id === activeFilter);
+  const shown = activeFilter === null ? allImages : allImages.filter(hasFilterTag);
+  // The images Previous and Next walk: the shown ones, plus the open image when it lost the tag (CA-5.8).
+  const navigable =
+    activeFilter === null ? allImages : allImages.filter((i) => i.id === openId || hasFilterTag(i));
+  const navIndex = navigable.findIndex((image) => image.id === openId);
+
   return (
     <main>
       <header>
@@ -165,29 +196,36 @@ export function App() {
       {images !== null && images.length === 0 ? <p>{t("library.empty")}</p> : null}
       {images !== null && images.length > 0 ? (
         <>
+          {allTags.length > 0 ? (
+            <TagFilter
+              tags={allTags}
+              value={activeFilter}
+              shown={shown.length}
+              total={images.length}
+              onChange={setFilterTagId}
+            />
+          ) : null}
           <SelectionBar
             selected={images.filter((image) => image.selected).length}
             total={images.length}
             onSelectAll={() => selectAll(true)}
             onClear={() => selectAll(false)}
           />
-          <ImageGrid
-            images={images}
-            onToggle={toggle}
-            onOpenNote={(image) => setOpenId(image.id)}
-          />
+          <ImageGrid images={shown} onToggle={toggle} onOpenNote={(image) => setOpenId(image.id)} />
         </>
       ) : null}
       {openImage !== null ? (
         <ImageViewer
           key={openImage.id}
           image={openImage}
-          previousId={images?.[openIndex - 1]?.id ?? null}
-          nextId={images?.[openIndex + 1]?.id ?? null}
+          previousId={navigable[navIndex - 1]?.id ?? null}
+          nextId={navigable[navIndex + 1]?.id ?? null}
           onOpen={setOpenId}
           onClose={() => setOpenId(null)}
           onSaved={noteSaved}
           onMarks={marksChanged}
+          allTags={allTags}
+          onTags={tagsChanged}
         />
       ) : null}
     </main>

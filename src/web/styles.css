@@ -290,3 +290,61 @@ header label {
 .marks li {
   margin-bottom: 0.5rem;
 }
+
+.tags {
+  flex: 0 0 auto;
+}
+
+.tag-list,
+.tag-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.tag-form input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+}
+
+.tags p[role="alert"] {
+  margin: 0 0 0.5rem;
+  color: #b00020;
+}
+
+.image-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.25rem 0 0;
+}
+
+.tag-chip {
+  padding: 0 0.4rem;
+  border-radius: 0.5rem;
+  background: #e8e8e8;
+  font-size: 0.75rem;
+}
+
+.tag-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+}
+
+.tag-filter label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

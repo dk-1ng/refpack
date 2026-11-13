@@ -42,7 +42,7 @@ Eu adiciono imagens à biblioteca e as vejo numa grade: escolhendo arquivos, col
 
 ### F2. Anotar — *fatias 3, 4 e 5*
 
-Em cada imagem eu escrevo uma nota geral, marco partes com "gosto" ou "não gosto" e um comentário, e coloco etiquetas (tipo de tela, componente, aspecto).
+Em cada imagem eu escrevo uma nota geral, marco partes com "gosto" ou "não gosto" e um comentário, e coloco etiquetas: palavras livres, minhas, que depois servem para filtrar a grade.
 
 ### F3. Receber sugestões da IA — *fatia 7*
 
@@ -601,11 +601,137 @@ O teste manual do dono é feito no Firefox, com o mouse de verdade, e termina pe
 - Ver os retângulos na grade: a grade mostra só o sinal com a quantidade.
 - Etiquetas (fatia 5).
 
-## 11. Depois
+## 11. Fatia 5 — etiquetas
+
+**O que eu consigo fazer ao final:** colocar etiquetas numa imagem, reaproveitando as que já usei, e filtrar a grade por uma etiqueta; as etiquetas de cada imagem saem no `README.md` do pacote.
+
+O que vale para as fatias 0 a 4 continua valendo, com as mudanças listadas em "O que muda nos critérios anteriores". Tudo o que não está listado abaixo fica fora desta fatia.
+
+### Definições desta fatia
+
+- **Etiqueta:** uma palavra ou expressão curta, numa linha só, que eu escrevo e coloco numa imagem (por exemplo, "dashboard", "tabela", "muito espaço em branco"). Não há categorias nem lista pronta: a etiqueta é o que eu digito. Tem até 60 caracteres; a caixa não aceita mais que isso.
+- **Espaços nas pontas não fazem parte da etiqueta.** O resto fica exatamente como eu digitei: acentos, maiúsculas, emojis e espaços entre as palavras. Uma etiqueta só de espaços, ou vazia, não existe.
+- **Mesma etiqueta:** duas etiquetas que diferem só por letras maiúsculas e minúsculas são a mesma ("Dashboard" e "dashboard"). A etiqueta aparece em todo lugar do jeito que foi escrita na primeira vez em que foi criada.
+- **Uma etiqueta existe enquanto pelo menos uma imagem a tem.** Quando é tirada da última imagem, ela deixa de existir: não é mais sugerida nem aparece no filtro. Se eu a escrever de novo, ela nasce de novo, com a grafia nova.
+- **A etiqueta é da imagem**, como a nota e as marcações: fica guardada com a imagem até eu tirar e vale para todos os pacotes em que a imagem entrar. Uma imagem pode ter várias etiquetas; elas ficam na ordem em que eu as coloquei.
+- **Filtro:** uma etiqueta escolhida para a grade mostrar só as imagens que a têm. Só uma de cada vez. O filtro é da tela, não da biblioteca: ao reabrir o refpack, a grade mostra todas as imagens.
+- **Imagens mostradas:** as que a grade está mostrando: todas, sem filtro; só as que têm a etiqueta, com filtro.
+
+### Critérios de aceite
+
+**CA-5.1 Ver e colocar etiquetas na imagem aberta**
+- Dado que uma imagem está aberta,
+- quando eu olho ao lado dela,
+- então vejo a seção "Etiquetas" com as etiquetas que essa imagem já tem, na ordem em que foram colocadas, e uma caixa para escrever uma nova.
+- Quando eu escrevo na caixa e aperto Enter, ou clico em "Adicionar", a etiqueta é guardada sozinha, aparece na lista da imagem, a caixa fica vazia e o cursor continua nela, para eu escrever a próxima.
+- Com a caixa vazia ou só com espaços, Enter e "Adicionar" não fazem nada.
+- O cursor continua começando na caixa da nota (CA-3.1).
+
+**CA-5.2 Reaproveitar uma etiqueta que já existe**
+- Dado que alguma imagem da biblioteca tem a etiqueta "dashboard",
+- quando eu escrevo "Dashboard" (ou "DASHBOARD") em outra imagem,
+- então essa imagem recebe a etiqueta "dashboard", escrita como da primeira vez; nenhuma etiqueta nova é criada.
+- Se eu escrevo uma etiqueta que a imagem aberta já tem, nada muda: a caixa só fica vazia.
+
+**CA-5.3 Sugestões**
+- Dado que uma imagem está aberta,
+- quando eu olho embaixo da caixa de etiqueta,
+- então vejo, em ordem alfabética, as etiquetas que existem na biblioteca e que esta imagem ainda não tem; conforme eu escrevo, ficam só as que contêm o que eu escrevi, sem distinguir maiúsculas de minúsculas.
+- Clicar numa sugestão coloca essa etiqueta na imagem, como no CA-5.1, e a caixa fica vazia.
+- Sem nenhuma etiqueta para sugerir, a lista de sugestões não aparece.
+
+**CA-5.4 Tirar uma etiqueta**
+- Dado que a imagem aberta tem etiquetas,
+- quando eu clico em "Remover" numa delas,
+- então ela some da lista da imagem, sem pergunta de confirmação, e a mudança é guardada sozinha.
+- Se nenhuma outra imagem tinha essa etiqueta, ela deixa de existir: não aparece mais nas sugestões nem no filtro.
+- Tirar uma etiqueta não mexe na nota, nas marcações, nas outras etiquetas nem na seleção da imagem.
+
+**CA-5.5 Etiquetas na grade**
+- Dado que uma imagem tem etiquetas,
+- quando eu olho a grade,
+- então essa imagem mostra as etiquetas dela, em letra pequena, na ordem em que foram colocadas; as imagens sem etiqueta não mostram nada a mais.
+- A grade muda sem eu recarregar a página, conforme eu coloco ou tiro etiquetas. Os sinais de nota (CA-3.5) e de marcações (CA-4.7) continuam como estão.
+
+**CA-5.6 Filtrar a grade por etiqueta**
+- Dado que a biblioteca tem imagens com etiquetas,
+- quando eu escolho uma etiqueta em "Filtrar por etiqueta",
+- então a grade mostra só as imagens que têm essa etiqueta, na mesma ordem de sempre, e a tela diz quantas estão sendo mostradas de quantas existem (por exemplo, "Mostrando 4 de 12 imagens").
+- A lista do filtro traz, em ordem alfabética, todas as etiquetas que existem na biblioteca, e a opção "Todas as imagens", que é a inicial. Escolher "Todas as imagens" tira o filtro.
+- Sem nenhuma etiqueta na biblioteca, o filtro não aparece.
+- Se a etiqueta do filtro deixa de existir (CA-5.4), o filtro sai sozinho e a grade volta a mostrar todas as imagens.
+
+**CA-5.7 Selecionar com o filtro ligado**
+- Dado que a grade está filtrada,
+- quando eu clico em "Selecionar todas" ou em "Limpar seleção",
+- então só as imagens mostradas são selecionadas ou tiradas da seleção; as outras continuam como estavam.
+- A contagem "X de Y selecionadas" continua falando da biblioteca inteira.
+- "Gerar pacote" leva todas as imagens selecionadas, mostradas ou não: o filtro só muda o que eu vejo.
+
+**CA-5.8 Imagem aberta com o filtro ligado**
+- Dado que a grade está filtrada e eu abro uma imagem,
+- quando eu clico em "Anterior" ou "Próxima",
+- então passo só pelas imagens mostradas, na ordem da grade.
+- Se eu tiro da imagem aberta a etiqueta do filtro, a imagem continua aberta até eu fechar; ao fechar, ela não está mais na grade. "Anterior" e "Próxima" continuam levando às vizinhas entre as mostradas.
+
+**CA-5.9 Adicionar imagens com o filtro ligado**
+- Dado que a grade está filtrada,
+- quando eu adiciono imagens (pelo botão, colando ou soltando),
+- então o filtro sai sozinho e a grade mostra todas as imagens, com as novas primeiro, como sempre.
+
+**CA-5.10 Fechar e voltar**
+- Dado que eu coloquei etiquetas,
+- quando eu fecho o refpack e abro de novo,
+- então cada imagem traz as mesmas etiquetas, na mesma ordem, a grade mostra as mesmas etiquetas em cada imagem, e o filtro está em "Todas as imagens".
+
+**CA-5.11 As etiquetas saem no pacote**
+- Dado que uma imagem selecionada tem etiquetas,
+- quando o pacote é gerado,
+- então a linha dessa referência no `README.md` traz as etiquetas dela, entre aspas, na ordem em que foram colocadas e exatamente como escritas.
+- O `README.md` diz ao agente, em inglês, que as etiquetas são palavras do dono, podem estar em outra língua, e que imagens com a mesma etiqueta têm algo em comum.
+- Imagem selecionada sem etiqueta não ganha nada na linha. Se nenhuma imagem selecionada tem etiqueta, o `README.md` não fala de etiquetas.
+- As etiquetas de uma imagem que não está selecionada não entram no pacote.
+- No teste manual do dono, o Claude Code, ao ler a pasta, consegue dizer quais etiquetas cada referência tem.
+
+**CA-5.12 Começar outro pacote não apaga etiquetas**
+- Dado que há imagens com etiquetas,
+- quando eu clico em "Começar outro pacote" e confirmo,
+- então a seleção e a intenção ficam vazias, como no CA-2.10, e todas as etiquetas continuam como estavam. O filtro também não muda.
+
+**CA-5.13 A tela ficou aberta com o refpack parado**
+- Dado que eu parei o refpack no terminal e a tela continuou aberta no navegador, com uma imagem aberta,
+- quando eu coloco ou tiro uma etiqueta,
+- então a tela avisa, na língua da tela, que não conseguiu guardar; as etiquetas da imagem continuam como estavam, e o texto que eu digitei continua na caixa.
+
+### O que muda nos critérios anteriores
+
+- **CA-2.2:** com o filtro ligado, "Selecionar todas" e "Limpar seleção" agem só sobre as imagens mostradas (CA-5.7). Sem filtro, nada muda.
+- **CA-3.4:** com o filtro ligado, "Anterior" e "Próxima" passam só pelas imagens mostradas (CA-5.8).
+- **CA-0.3, CA-1.2, CA-1.3 e CA-1.6:** adicionar imagens com o filtro ligado tira o filtro (CA-5.9).
+- **CA-0.7, CA-2.6, CA-3.7 e CA-4.9:** o `README.md` do pacote leva também as etiquetas das imagens selecionadas (CA-5.11).
+- **CA-2.10, CA-3.8 e CA-4.10:** "Começar outro pacote" não apaga etiquetas (CA-5.12).
+
+### Como estes critérios são conferidos
+
+Os testes automáticos rodam no Chromium e no Firefox (ADR-0010). O teste manual do dono é feito no Firefox e termina pedindo ao Claude Code que leia o pacote gerado.
+
+### Fora desta fatia, de propósito
+
+- Categorias de etiqueta (tipo de tela, componente, aspecto) e lista pronta de etiquetas.
+- Renomear uma etiqueta, ou tirá-la de todas as imagens de uma vez.
+- Etiquetar várias imagens de uma vez, ou etiquetar direto na grade sem abrir a imagem.
+- Filtrar por mais de uma etiqueta, ou por "sem etiqueta".
+- Lembrar o filtro ao reabrir o refpack.
+- Escolher uma sugestão pelas setas do teclado: é por clique, ou escrevendo a etiqueta inteira.
+- Buscar imagens por texto da nota, do comentário ou da etiqueta.
+- Cores ou ícones nas etiquetas.
+- Etiquetas sugeridas pela IA (fatia 7).
+
+## 12. Depois
 
 O que é parte da visão mas não cabe na fatia atual vai para a lista "Depois", que vive em um lugar só: o `ROADMAP.md`. Nada dessa lista é construído sem antes virar fatia, por decisão do dono.
 
-## 12. Fora do escopo
+## 13. Fora do escopo
 
 - Contas, login, nuvem, vários usuários.
 - Celular.

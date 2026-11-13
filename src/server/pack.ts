@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { getIntent } from "./draft.ts";
 import { type Library, listImages } from "./library.ts";
 import { cropFileName, listMarks, type StoredMark } from "./marks.ts";
+import { listTags } from "./tags.ts";
 
 function two(value: number): string {
   return String(value).padStart(2, "0");
@@ -27,6 +28,9 @@ export function refNumber(index: number, count: number): string {
 
 const MARKS_PARAGRAPH =
   "Some references have marks: parts of the image the owner pointed at, listed under the image below. Each mark has a crop of that part in `marks/`. `like` means the owner wants this taken as a quality to reproduce; `dislike` means avoid it. A mark may also have a comment file, in the owner's own words and possibly in a language other than English. `area` says where the part is in the full image, as percentages of its width (x, from the left) and of its height (y, from the top).";
+
+const TAGS_PARAGRAPH =
+  "Some references have tags: short labels the owner put on the image, listed after `tags:` on its line below, each in double quotes. They are in the owner's own words and may be in a language other than English. References that share a tag have that kind or quality in common.";
 
 function percent(fraction: number): number {
   return Math.round(fraction * 100);
@@ -87,6 +91,9 @@ export function createPack(library: Library, now: Date): PackResult {
     const number = refNames[index]?.split(".")[0] ?? "";
     return list.map((mark, position) => markLine(mark, position + 1, number));
   });
+  const allTags = listTags(library);
+  const tagsOf = images.map((image) => allTags.get(image.id) ?? []);
+  const hasTags = tagsOf.some((list) => list.length > 0);
   if (hasMarks) {
     mkdirSync(join(path, "marks"));
     marksOf.forEach((list, index) => {
@@ -126,6 +133,7 @@ export function createPack(library: Library, now: Date): PackResult {
         ]
       : []),
     ...(hasMarks ? ["", MARKS_PARAGRAPH] : []),
+    ...(hasTags ? ["", TAGS_PARAGRAPH] : []),
     "",
     `- Created: ${created}`,
     `- References: ${images.length}`,
@@ -139,7 +147,12 @@ export function createPack(library: Library, now: Date): PackResult {
           images[index]?.note.trim() === ""
             ? line
             : `${line} — note: \`notes/${name.split(".")[0]}.md\``;
-        return [withNote, ...(markLines[index] ?? [])];
+        const tags = tagsOf[index] ?? [];
+        const withTags =
+          tags.length === 0
+            ? withNote
+            : `${withNote} — tags: ${tags.map((tag) => JSON.stringify(tag.name)).join(", ")}`;
+        return [withTags, ...(markLines[index] ?? [])];
       })
       .flat(),
     "",

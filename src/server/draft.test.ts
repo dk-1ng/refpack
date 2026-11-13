@@ -8,6 +8,7 @@ import {
   openLibrary,
   type StoredImage,
 } from "./library.ts";
+import { addTag } from "./tags.ts";
 import { JPEG_BYTES, PNG_BYTES, tempLibraryRoot, WEBP_BYTES } from "./test-support.ts";
 
 const libraries: Library[] = [];
@@ -97,4 +98,23 @@ test("CA-2.5 the intent is still there after closing and reopening the library",
   setIntent(first, INTENT);
   closeLibrary(first);
   expect(getIntent(makeLibrary(root))).toBe(INTENT);
+});
+
+test("CA-5.7 setAllSelected with a tag changes only the images that have it, and answers false for an unknown tag", () => {
+  const library = makeLibrary();
+  const a = add(library, PNG_BYTES, "a.png");
+  const b = add(library, JPEG_BYTES, "b.jpg");
+  const c = add(library, WEBP_BYTES, "c.webp");
+  const added = addTag(library, a.id, "ui");
+  if (!added.ok) throw new Error("expected tag");
+  addTag(library, c.id, "ui");
+  setSelected(library, b.id, true);
+  expect(setAllSelected(library, true, added.tag.id)).toBe(true);
+  expect(flags(library)).toEqual([true, true, true]);
+  expect(setAllSelected(library, false, added.tag.id)).toBe(true);
+  expect(flags(library)).toEqual([false, true, false]);
+  expect(setAllSelected(library, true, "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f")).toBe(false);
+  expect(flags(library)).toEqual([false, true, false]);
+  expect(setAllSelected(library, false)).toBe(true);
+  expect(flags(library)).toEqual([false, false, false]);
 });
