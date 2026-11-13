@@ -177,3 +177,27 @@ export async function saveMarkComment(markId: string, comment: string): Promise<
     return false;
   }
 }
+
+export async function saveMarkKind(markId: string, kind: MarkKind): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/marks/${encodeURIComponent(markId)}/kind`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteMark(markId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`/api/marks/${encodeURIComponent(markId)}`, {
+      method: "DELETE",
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}

@@ -573,3 +573,175 @@ test("CA-4.4 the comment box follows the screen language", async ({ page, app })
   await expect(box1).toBeFocused();
   await expect(box1).toHaveAttribute("placeholder", "Comentário (opcional)");
 });
+
+const kind = (page: Page, n: number, name: "Like" | "Dislike") =>
+  marks(page)
+    .nth(n - 1)
+    .getByRole("radio", { name, exact: true });
+const del = (page: Page, n: number) =>
+  marks(page)
+    .nth(n - 1)
+    .getByRole("button", { name: "Delete" });
+
+test("CA-4.5 changing the kind saves by itself and shows on the list and on the rectangle", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await expect(comment(page, 1)).toBeEnabled();
+  await comment(page, 1).fill("keep");
+  await expect(saved(page, 1)).toHaveText("Saved");
+  await expect(kind(page, 1, "Like")).toBeChecked();
+  await kind(page, 1, "Dislike").click();
+  await expect(kind(page, 1, "Dislike")).toBeChecked();
+  await expect(box(page, 1)).toHaveText("1 ✕");
+  await expectPlaced(page, box(page, 1), { left: 0.1, top: 0.1, right: 0.4, bottom: 0.4 });
+  await expect(comment(page, 1)).toHaveValue("keep");
+  await page.reload();
+  await open(page, "a.png");
+  await expect(kind(page, 1, "Dislike")).toBeChecked();
+  await expect(box(page, 1)).toHaveText("1 ✕");
+});
+
+test("CA-4.6 Delete removes the mark and the next ones move up one number", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await viewer(page).getByLabel("Note on this image").fill("note");
+  await mark(page, [0.05, 0.05], [0.25, 0.25], "Like");
+  await mark(page, [0.3, 0.3], [0.5, 0.5], "Dislike");
+  await mark(page, [0.6, 0.6], [0.9, 0.9], "Like");
+  let dialogs = 0;
+  page.on("dialog", (dialog) => {
+    dialogs += 1;
+    void dialog.dismiss();
+  });
+  await del(page, 2).click();
+  await expect(marks(page)).toHaveCount(2);
+  await expect(box(page, 3)).toHaveCount(0);
+  await expect(box(page, 2)).toHaveText("2 ✓");
+  await expectPlaced(page, box(page, 2), { left: 0.6, top: 0.6, right: 0.9, bottom: 0.9 });
+  await expect(box(page, 1)).toHaveText("1 ✓");
+  await expectPlaced(page, box(page, 1), { left: 0.05, top: 0.05, right: 0.25, bottom: 0.25 });
+  await expect(viewer(page).getByLabel("Note on this image")).toHaveValue("note");
+  expect(dialogs).toBe(0);
+  await button(page, "Close").click();
+  await expect(viewer(page)).toHaveCount(0);
+  await expect(page.getByText("0 of 1 selected")).toBeVisible();
+  await page.reload();
+  await open(page, "a.png");
+  await expect(marks(page)).toHaveCount(2);
+});
+
+test("CA-4.6 deleting a mark that has a comment asks first", async ({ page, app }) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await expect(comment(page, 1)).toBeEnabled();
+  await comment(page, 1).fill("why");
+  await expect(saved(page, 1)).toHaveText("Saved");
+  let message = "";
+  page.once("dialog", (dialog) => {
+    message = dialog.message();
+    void dialog.dismiss();
+  });
+  await del(page, 1).click();
+  await expect
+    .poll(() => message)
+    .toBe("This mark has a comment, which will be deleted with it. Delete?");
+  await expect(marks(page)).toHaveCount(1);
+  page.once("dialog", (dialog) => void dialog.accept());
+  await del(page, 1).click();
+  await expect(marks(page)).toHaveCount(0);
+  await expect(box(page, 1)).toHaveCount(0);
+});
+
+test("CA-4.6 CA-4.9 the pack uses the numbers the screen shows after a delete", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await mark(page, [0.6, 0.6], [0.9, 0.9], "Dislike");
+  await del(page, 1).click();
+  await expect(marks(page)).toHaveCount(1);
+  const path = await generate(page);
+  expect(await readdir(join(path, "marks"))).toEqual(["01-1.png"]);
+  expect((await readPng(page, join(path, "marks", "01-1.png"), [[0, 0]])).colors).toEqual([
+    "#3366cc",
+  ]);
+  const readme = await readFile(join(path, "README.md"), "utf8");
+  expect(readme).toContain("   - Mark 1 (dislike): `marks/01-1.png`");
+});
+
+test("CA-4.7 the grid shows how many marks each image has, without reloading", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a, b]);
+  await expect(page.getByTitle(/^Marks: /)).toHaveCount(0);
+  await open(page, "b.jpg");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await mark(page, [0.6, 0.6], [0.9, 0.9], "Dislike");
+  await button(page, "Close").click();
+  await expect(viewer(page)).toHaveCount(0);
+  await expect(item(page, "b.jpg").getByTitle("Marks: 2")).toBeVisible();
+  await expect(item(page, "b.jpg").getByTitle("Marks: 2")).toHaveText("2");
+  await expect(page.getByTitle(/^Marks: /)).toHaveCount(1);
+  await expect(page.getByTitle("Has a note")).toHaveCount(0);
+  await open(page, "b.jpg");
+  await del(page, 1).click();
+  await expect(marks(page)).toHaveCount(1);
+  await button(page, "Close").click();
+  await expect(viewer(page)).toHaveCount(0);
+  await expect(item(page, "b.jpg").getByTitle("Marks: 1")).toBeVisible();
+  await open(page, "b.jpg");
+  await del(page, 1).click();
+  await expect(marks(page)).toHaveCount(0);
+  await button(page, "Close").click();
+  await expect(viewer(page)).toHaveCount(0);
+  await expect(page.getByTitle(/^Marks: /)).toHaveCount(0);
+  await page.getByLabel("Language").selectOption({ label: "Português" });
+  await item(page, "b.jpg").getByRole("button", { name: "Anotar" }).click();
+  await expect(viewer(page)).toBeVisible();
+  await ready(page);
+  await drag(page, [0.1, 0.1], [0.4, 0.4]);
+  await button(page, "Gosto").click();
+  await expect(marks(page)).toHaveCount(1);
+  await button(page, "Fechar").click();
+  await expect(viewer(page)).toHaveCount(0);
+  await expect(page.getByTitle("Marcações: 1")).toBeVisible();
+});
+
+test("CA-4.11 with refpack stopped, changing the kind or deleting changes nothing and the screen says so", async ({
+  page,
+  app,
+}) => {
+  await page.goto(app.url);
+  await drop(page, [a]);
+  await open(page, "a.png");
+  await mark(page, [0.1, 0.1], [0.4, 0.4], "Like");
+  await page.route("**/api/marks/**", refuse);
+  await kind(page, 1, "Dislike").click();
+  await expect(viewer(page).getByRole("alert")).toHaveText(NOT_SAVED);
+  await expect(kind(page, 1, "Like")).toBeChecked();
+  await expect(box(page, 1)).toHaveText("1 ✓");
+  await del(page, 1).click();
+  await expect(viewer(page).getByRole("alert")).toHaveText(NOT_SAVED);
+  await expect(marks(page)).toHaveCount(1);
+  await expect(box(page, 1)).toBeVisible();
+  await page.unroute("**/api/marks/**", refuse);
+  await kind(page, 1, "Dislike").click();
+  await expect(kind(page, 1, "Dislike")).toBeChecked();
+  await expect(viewer(page).getByRole("alert")).toHaveCount(0);
+});

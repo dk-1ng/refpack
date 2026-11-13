@@ -139,6 +139,23 @@ header label {
   background: currentColor;
 }
 
+.mark-count {
+  display: inline-block;
+  min-width: 1.2rem;
+  margin-left: 0.4rem;
+  padding: 0 0.3rem;
+  border-radius: 0.6rem;
+  background: #dddddd;
+  color: #222222;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.marks [role="radiogroup"] {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .viewer[open] {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 22rem;

@@ -6,7 +6,7 @@ import {
   type Mark,
   type MarkKind,
 } from "../../shared/api.ts";
-import { createMark } from "../api.ts";
+import { createMark, deleteMark, saveMarkKind } from "../api.ts";
 import { useI18n } from "../i18n/index.tsx";
 import { cropToPng } from "../marks/crop.ts";
 import { ImageStage } from "../marks/ImageStage.tsx";
@@ -104,6 +104,26 @@ export function ImageViewer({
     }
   }
 
+  async function changeKind(markId: string, kind: MarkKind): Promise<void> {
+    if (await saveMarkKind(markId, kind)) {
+      onMarks(image.id, (marks) =>
+        marks.map((item) => (item.id === markId ? { ...item, kind } : item)),
+      );
+      setFailed(false);
+    } else {
+      setFailed(true);
+    }
+  }
+
+  async function remove(markId: string): Promise<void> {
+    if (await deleteMark(markId)) {
+      onMarks(image.id, (marks) => marks.filter((item) => item.id !== markId));
+      setFailed(false);
+    } else {
+      setFailed(true);
+    }
+  }
+
   return (
     <dialog
       ref={dialogRef}
@@ -145,6 +165,8 @@ export function ImageViewer({
           focusId={focusId}
           onCommentSaved={commentSaved}
           registerFlush={registerFlush}
+          onKind={(markId, kind) => void changeKind(markId, kind)}
+          onDelete={(markId) => void remove(markId)}
         />
         <div className="viewer-buttons">
           <button

@@ -11,6 +11,8 @@ export function MarkPanel({
   focusId,
   onCommentSaved,
   registerFlush,
+  onKind,
+  onDelete,
 }: {
   marks: Mark[];
   pending: Area | null;
@@ -20,6 +22,8 @@ export function MarkPanel({
   focusId: string | null; // the mark whose comment box gets the cursor when it appears
   onCommentSaved: (markId: string, comment: string) => void;
   registerFlush: (markId: string, flush: (() => Promise<boolean>) | null) => void;
+  onKind: (markId: string, kind: MarkKind) => void;
+  onDelete: (markId: string) => void;
 }) {
   const { t } = useI18n();
   return (
@@ -50,6 +54,8 @@ export function MarkPanel({
               focus={mark.id === focusId}
               onCommentSaved={onCommentSaved}
               registerFlush={registerFlush}
+              onKind={onKind}
+              onDelete={onDelete}
             />
           ))}
         </ol>
