@@ -83,12 +83,16 @@ export async function createPack(): Promise<CreatePackResult> {
   }
 }
 
-async function putSelected(path: string, selected: boolean): Promise<boolean> {
+async function putSelected(
+  path: string,
+  selected: boolean,
+  tagId: string | null = null,
+): Promise<boolean> {
   try {
     const response = await fetch(path, {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ selected }),
+      body: JSON.stringify(tagId === null ? { selected } : { selected, tagId }),
     });
     return response.ok;
   } catch {
@@ -100,8 +104,9 @@ export function setImageSelected(id: string, selected: boolean): Promise<boolean
   return putSelected(`/api/images/${encodeURIComponent(id)}/selected`, selected);
 }
 
-export function setAllSelected(selected: boolean): Promise<boolean> {
-  return putSelected("/api/draft/selection", selected);
+// Every image, or only the images with the tag when `tagId` is given.
+export function setAllSelected(selected: boolean, tagId: string | null = null): Promise<boolean> {
+  return putSelected("/api/draft/selection", selected, tagId);
 }
 
 export async function fetchIntent(): Promise<string> {
