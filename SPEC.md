@@ -727,11 +727,146 @@ Os testes automáticos rodam no Chromium e no Firefox (ADR-0010). O teste manual
 - Cores ou ícones nas etiquetas.
 - Etiquetas sugeridas pela IA (fatia 7).
 
-## 12. Depois
+## 12. Fatia 6 — entrada em volume
+
+**O que eu consigo fazer ao final:** importar uma pasta inteira, arrastando-a para a tela ou escolhendo-a por um botão; acompanho o andamento, posso parar, e no fim vejo um resumo. A grade continua rápida com 10.000 imagens.
+
+O que vale para as fatias 0 a 5 continua valendo, com as mudanças listadas em "O que muda nos critérios anteriores". Tudo o que não está listado abaixo fica fora desta fatia.
+
+### Definições desta fatia
+
+- **Importar uma pasta:** trazer de uma vez as imagens que estão dentro de uma pasta, em todos os níveis de subpasta. Os nomes das pastas não viram nada na biblioteca.
+- **Arquivo de imagem:** na importação, um arquivo cujo nome termina em `.png`, `.jpg`, `.jpeg` ou `.webp`, com letras maiúsculas ou minúsculas. Os outros arquivos (textos, PDFs, GIFs, arquivos escondidos do sistema) são **ignorados**: não entram e não ganham aviso próprio, só são contados.
+- **Imagem idêntica:** um arquivo com exatamente o mesmo conteúdo de uma imagem que já está na biblioteca, qualquer que seja o nome. Na importação de pasta ela é **pulada**. Pelo botão "Adicionar imagens", colando ou soltando arquivos soltos, nada muda: o mesmo arquivo entra duas vezes, como hoje.
+- **Importação em andamento:** do momento em que eu escolho ou solto a pasta até a importação terminar ou ser parada. Só existe uma de cada vez.
+- **Miniatura:** uma versão pequena de cada imagem, feita pelo refpack, usada só na grade. A imagem aberta e o pacote continuam usando a imagem original, inteira.
+
+### Critérios de aceite
+
+**CA-6.1 Importar pelo botão**
+- Dado que a tela está aberta,
+- quando eu clico em "Importar pasta", ao lado de "Adicionar imagens", e escolho uma pasta na janela do sistema,
+- então a importação dessa pasta começa.
+- Antes de começar, o navegador pode pedir que eu confirme o envio dos arquivos ao refpack. Essa pergunta é do navegador, não do refpack.
+
+**CA-6.2 Importar soltando**
+- Dado que a tela está aberta e nenhuma imagem está aberta,
+- quando eu arrasto uma ou mais pastas, sozinhas ou junto com arquivos, e solto em qualquer ponto da tela,
+- então começa uma importação só, com o conteúdo de todas as pastas soltas e os arquivos soltos junto com elas.
+- Soltar só arquivos, sem pasta, continua como no CA-1.6.
+
+**CA-6.3 O que entra e em que ordem**
+- Dado que uma importação começou,
+- quando ela termina,
+- então cada arquivo de imagem aceito (CA-0.5) que não é idêntico entra na biblioteca como pelo botão: o original continua no lugar, com o mesmo conteúdo; a biblioteca guarda uma cópia; a imagem entra sem estar selecionada (CA-2.3).
+- Na grade, as imagens importadas ficam antes das que já existiam, na ordem alfabética do caminho dentro da pasta (`a/1.png`, `a/2.png`, `b/1.png`…).
+
+**CA-6.4 Acompanhar o andamento**
+- Dado que uma importação está em andamento,
+- quando eu olho a tela,
+- então vejo quantos arquivos de imagem já foram tratados e quantos são ao todo (por exemplo, "Importando 340 de 2.000 imagens"), e as imagens aparecem na grade conforme entram, sem eu recarregar a página.
+- Eu continuo podendo usar o resto da tela: selecionar, filtrar, abrir imagens, anotar, marcar, etiquetar e gerar o pacote.
+- "Adicionar imagens" e "Importar pasta" ficam desativados. Se eu colo ou solto arquivos ou pastas, a tela avisa, na língua da tela, que é preciso esperar a importação terminar ou pará-la; nada é adicionado.
+
+**CA-6.5 Parar**
+- Dado que uma importação está em andamento,
+- quando eu clico em "Parar",
+- então nenhuma imagem nova entra depois da que estava sendo guardada naquele instante; as que já entraram ficam na biblioteca, e aparece o resumo (CA-6.8), dizendo que a importação foi parada e quantas imagens não chegaram a ser importadas.
+
+**CA-6.6 Imagens idênticas são puladas**
+- Dado que a biblioteca já tem uma imagem,
+- quando eu importo uma pasta que tem um arquivo com exatamente o mesmo conteúdo, com qualquer nome,
+- então esse arquivo não entra, e o resumo o conta entre as que já estavam na biblioteca.
+- Vale também para dois arquivos idênticos dentro da mesma pasta: só um deles entra, o outro é pulado.
+- Importar a mesma pasta duas vezes não traz nada de novo na segunda vez.
+
+**CA-6.7 Arquivos recusados e ignorados**
+- Dado que a pasta tem arquivos de imagem recusados pelo CA-0.5 (conteúdo que não é PNG, JPEG ou WebP, ou mais de 25 MB) e outros arquivos,
+- quando a importação termina,
+- então os recusados não entram e aparecem no resumo, cada um com o caminho dentro da pasta e o motivo; os outros arquivos não entram e o resumo diz só quantos foram ignorados.
+- Nada disso interrompe a importação: as imagens aceitas entram normalmente.
+
+**CA-6.8 Resumo**
+- Dado que uma importação terminou ou foi parada,
+- quando eu olho a tela,
+- então vejo um resumo, na língua da tela, com quantas imagens entraram, quantas já estavam na biblioteca, quantas foram recusadas (com caminho e motivo de cada uma) e quantos arquivos foram ignorados. Os números que forem zero não aparecem.
+- Se a pasta não tem nenhum arquivo de imagem, o resumo diz que nenhuma imagem foi encontrada, e nada entra.
+- O resumo fica na tela até eu clicar em "Fechar" ou começar outra importação.
+
+**CA-6.9 Importar com o filtro ligado**
+- Dado que a grade está filtrada por uma etiqueta,
+- quando uma importação começa,
+- então o filtro sai sozinho e a grade mostra todas as imagens, como no CA-5.9.
+
+**CA-6.10 A tela ficou aberta com o refpack parado**
+- Dado que uma importação está em andamento,
+- quando eu paro o refpack no terminal,
+- então a importação para, a tela avisa, na língua da tela, que não conseguiu guardar, e o resumo mostra o que entrou até ali.
+
+**CA-6.11 Fechar a tela no meio**
+- Dado que uma importação está em andamento,
+- quando eu fecho ou recarrego a tela,
+- então a importação para; as imagens que já entraram ficam na biblioteca.
+- Se eu importo a mesma pasta de novo, entram só as que faltavam (CA-6.6), e a grade fica na mesma ordem que teria se a primeira importação tivesse ido até o fim.
+
+**CA-6.12 Miniaturas na grade**
+- Dado que a biblioteca tem imagens,
+- quando eu olho a grade,
+- então cada imagem aparece como uma miniatura, com a mesma aparência de hoje (um quadrado com o centro da imagem).
+- Toda imagem nova ganha miniatura sozinha, venha do botão, de colar, de soltar ou de uma importação.
+- As imagens que eu já tinha antes desta fatia ganham miniatura sozinhas, com a tela aberta, sem eu fazer nada; enquanto uma imagem não tem miniatura, a grade mostra a imagem original no lugar dela.
+- A imagem aberta e o pacote usam a imagem original: os arquivos de `refs/` continuam iguais, byte a byte, ao que eu adicionei.
+
+**CA-6.13 Grade rápida com 10.000 imagens**
+- Dado que a biblioteca tem 10.000 imagens,
+- quando eu abro a tela,
+- então as primeiras imagens da grade aparecem em até 3 segundos;
+- rolar a grade até o fim não trava, e as imagens aparecem conforme chegam à tela;
+- clicar para selecionar uma imagem, escolher um filtro e abrir uma imagem respondem em menos de meio segundo.
+
+**CA-6.14 Fechar e voltar**
+- Dado que eu importei pastas,
+- quando eu fecho o refpack e abro de novo,
+- então a grade mostra as mesmas imagens, na mesma ordem, com as miniaturas.
+
+**CA-6.15 A biblioteca que eu já tenho**
+- Dado a biblioteca criada nas fatias 0 a 5,
+- quando eu abro o refpack depois desta fatia,
+- então imagens, notas, marcações, etiquetas, seleção e intenção continuam iguais;
+- e se eu importo uma pasta com uma imagem que eu já tinha adicionado antes desta fatia, ela é pulada como idêntica (CA-6.6).
+
+### O que muda nos critérios anteriores
+
+- **CA-1.1:** a dica passa a dizer que também dá para arrastar pastas.
+- **CA-1.7:** soltar uma pasta deixa de mostrar o aviso de que pastas não são aceitas e passa a importá-la (CA-6.2). Colar uma pasta copiada continua não importando; o aviso passa a dizer que, para importar uma pasta, é preciso arrastá-la ou usar "Importar pasta".
+- **CA-0.5:** numa importação, os arquivos recusados aparecem no resumo (CA-6.7), não um aviso por arquivo.
+- **CA-0.3, CA-1.2, CA-1.3 e CA-1.6:** com uma importação em andamento, adicionar imagens fica bloqueado (CA-6.4).
+- **CA-5.9:** começar uma importação também tira o filtro (CA-6.9).
+- **CA-3.10:** continua valendo: com uma imagem aberta, soltar uma pasta não faz nada e não mostra aviso.
+
+### Como estes critérios são conferidos
+
+Os testes automáticos rodam no Chromium e no Firefox (ADR-0010). Escolher a pasta pelo botão é simulado nos dois; soltar uma pasta só pode ser simulado no Chromium, como no CA-1.7. A grade com 10.000 imagens é conferida com uma biblioteca fabricada pelo teste.
+
+No teste de uso (ADR-0019), a janela do sistema para escolher a pasta e o arrastar de verdade ficam fora do alcance do agente; ele faz o equivalente dentro da página. Os tempos do CA-6.13 são medidos no teste de uso, numa biblioteca de 10.000 imagens fabricadas.
+
+### Fora desta fatia, de propósito
+
+- O nome da pasta virar etiqueta.
+- Pular imagens idênticas pelo botão, colando ou soltando arquivos soltos.
+- Acompanhar uma pasta e importar sozinho o que for colocado nela depois.
+- Continuar sozinho uma importação parada: basta importar a mesma pasta de novo (CA-6.11).
+- Desfazer uma importação, ou apagar imagens.
+- Duas importações ao mesmo tempo, ou importar colando uma pasta copiada.
+- Formatos além de PNG, JPEG e WebP (GIF, HEIC, AVIF, SVG).
+- Miniaturas em outro lugar que não a grade; ampliar a imagem aberta (zoom).
+- Importar de Pinterest e de favoritos do navegador.
+
+## 13. Depois
 
 O que é parte da visão mas não cabe na fatia atual vai para a lista "Depois", que vive em um lugar só: o `ROADMAP.md`. Nada dessa lista é construído sem antes virar fatia, por decisão do dono.
 
-## 13. Fora do escopo
+## 14. Fora do escopo
 
 - Contas, login, nuvem, vários usuários.
 - Celular.

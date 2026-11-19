@@ -10,13 +10,20 @@ import {
   MAX_IMAGE_BYTES,
   MAX_INTENT_LENGTH,
   MAX_NOTE_LENGTH,
+  MAX_THUMB_BYTES,
   MarkSchema,
   PackCreatedSchema,
   TagSchema,
 } from "../shared/api.ts";
 import { createApp } from "./app.ts";
 import { closeLibrary, type Library, openLibrary } from "./library.ts";
-import { JPEG_BYTES, localRequest, PNG_BYTES, tempLibraryRoot } from "./test-support.ts";
+import {
+  JPEG_BYTES,
+  localRequest,
+  PNG_BYTES,
+  tempLibraryRoot,
+  WEBP_BYTES,
+} from "./test-support.ts";
 
 const libraries: Library[] = [];
 function makeApp() {
@@ -602,4 +609,86 @@ test("CA-0.11 the tag routes are behind the local-only guard", async () => {
     expect(response.status, `${method} ${path}`).toBe(403);
   }
   expect((await listedImages(app))[0]?.tags).toEqual([created]);
+});
+
+test("CA-6.6 POST /api/images?skipIdentical=1 answers 409 identical for content already in the library", async () => {
+  const app = makeApp();
+  expect((await upload(app, PNG_BYTES)).status).toBe(201);
+  const skipped = await localRequest(app, "/api/images?skipIdentical=1", {
+    method: "POST",
+    headers: { "x-original-name": "outro.png" },
+    body: new Uint8Array(PNG_BYTES),
+  });
+  expect(skipped.status).toBe(409);
+  expect(await skipped.json()).toEqual({ error: { code: "identical" } });
+  expect((await upload(app, PNG_BYTES)).status).toBe(201);
+  const list = ImageListSchema.parse(await (await localRequest(app, "/api/images")).json());
+  expect(list.images).toHaveLength(2);
+  const invalid = await localRequest(app, "/api/images?skipIdentical=yes", {
+    method: "POST",
+    body: new Uint8Array(PNG_BYTES),
+  });
+  expect(invalid.status).toBe(400);
+  expect(await invalid.json()).toEqual({ error: { code: "invalid-request" } });
+});
+
+test("CA-6.12 PUT and GET /api/images/:id/thumb store and return the thumbnail, and the list gives its address", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  expect(image.thumbUrl).toBeNull();
+  const put = await localRequest(app, `/api/images/${image.id}/thumb`, {
+    method: "PUT",
+    body: new Uint8Array(WEBP_BYTES),
+  });
+  expect(put.status).toBe(200);
+  expect(await put.json()).toEqual({ thumbUrl: `/api/images/${image.id}/thumb` });
+  const list = ImageListSchema.parse(await (await localRequest(app, "/api/images")).json());
+  expect(list.images[0]?.thumbUrl).toBe(`/api/images/${image.id}/thumb`);
+  const got = await localRequest(app, `/api/images/${image.id}/thumb`);
+  expect(got.status).toBe(200);
+  expect(got.headers.get("content-type")).toBe("image/webp");
+  expect(new Uint8Array(await got.arrayBuffer())).toEqual(WEBP_BYTES);
+  const file = await localRequest(app, image.url);
+  expect(new Uint8Array(await file.arrayBuffer())).toEqual(PNG_BYTES);
+});
+
+test("the thumbnail routes answer 404, 415 and 413", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  const none = await localRequest(app, `/api/images/${image.id}/thumb`);
+  expect(none.status).toBe(404);
+  for (const id of [UNKNOWN, "not-a-uuid"]) {
+    const put = await localRequest(app, `/api/images/${id}/thumb`, {
+      method: "PUT",
+      body: new Uint8Array(PNG_BYTES),
+    });
+    expect(put.status).toBe(404);
+    expect(await put.json()).toEqual({ error: { code: "not-found" } });
+    expect((await localRequest(app, `/api/images/${id}/thumb`)).status).toBe(404);
+  }
+  const bad = await localRequest(app, `/api/images/${image.id}/thumb`, {
+    method: "PUT",
+    body: new TextEncoder().encode("not an image"),
+  });
+  expect(bad.status).toBe(415);
+  expect(await bad.json()).toEqual({ error: { code: "unsupported-type" } });
+  const big = await localRequest(app, `/api/images/${image.id}/thumb`, {
+    method: "PUT",
+    body: new Uint8Array(MAX_THUMB_BYTES + 1),
+  });
+  expect(big.status).toBe(413);
+  expect(await big.json()).toEqual({ error: { code: "too-large" } });
+});
+
+test("CA-0.11 the thumbnail routes are behind the local-only guard", async () => {
+  const app = makeApp();
+  const image = ImageSchema.parse(await (await upload(app, PNG_BYTES)).json());
+  for (const method of ["PUT", "GET"]) {
+    const response = await app.request(`http://evil.example/api/images/${image.id}/thumb`, {
+      method,
+      headers: { host: "evil.example" },
+      ...(method === "PUT" ? { body: new Uint8Array(WEBP_BYTES) } : {}),
+    });
+    expect(response.status).toBe(403);
+  }
 });

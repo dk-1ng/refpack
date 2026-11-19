@@ -3,6 +3,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test as base, type JSHandle, type Locator, type Page } from "@playwright/test";
+import { addImage, closeLibrary, openLibrary, setThumbnail } from "../src/server/library.ts";
+import { addTag } from "../src/server/tags.ts";
 
 export type RunningApp = {
   url: string;
@@ -116,24 +118,30 @@ export async function makeImageFile(
   dir: string,
   name: string,
   mimeType: "image/png" | "image/jpeg" | "image/webp",
+  color = "#3366cc",
 ): Promise<string> {
-  const base64 = await page.evaluate(async (type) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 8;
-    canvas.height = 8;
-    const context = canvas.getContext("2d");
-    if (context === null) throw new Error("no 2d context");
-    context.fillStyle = "#3366cc";
-    context.fillRect(0, 0, 8, 8);
-    context.fillStyle = "#ffcc00";
-    context.fillRect(0, 0, 4, 4);
-    const blob = await new Promise<Blob | null>((resolveBlob) => canvas.toBlob(resolveBlob, type));
-    if (blob === null) throw new Error(`cannot export ${type}`);
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    let binary = "";
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    return btoa(binary);
-  }, mimeType);
+  const base64 = await page.evaluate(
+    async ({ type, color }) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 8;
+      canvas.height = 8;
+      const context = canvas.getContext("2d");
+      if (context === null) throw new Error("no 2d context");
+      context.fillStyle = color;
+      context.fillRect(0, 0, 8, 8);
+      context.fillStyle = "#ffcc00";
+      context.fillRect(0, 0, 4, 4);
+      const blob = await new Promise<Blob | null>((resolveBlob) =>
+        canvas.toBlob(resolveBlob, type),
+      );
+      if (blob === null) throw new Error(`cannot export ${type}`);
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = "";
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return btoa(binary);
+    },
+    { type: mimeType, color },
+  );
   await mkdir(dir, { recursive: true });
   const path = join(dir, name);
   await writeFile(path, Buffer.from(base64, "base64"));
@@ -253,6 +261,37 @@ export async function dropPaths(page: Page, paths: string[]): Promise<void> {
     await session.send("Input.dispatchDragEvent", { type, x: 200, y: 200, data });
   }
   await session.detach();
+}
+
+// Writes `count` images straight into a new library at `libraryDir`, in one transaction. Image i
+// (0-based) has the bytes of `png` followed by the 4 bytes of i, so each content differs; its name
+// is `img-${String(i).padStart(5, "0")}.png`; its thumbnail is `png`. The first `tagged` images get
+// the tag "ui". For CA-6.13.
+export function seedLibrary(libraryDir: string, count: number, png: Uint8Array, tagged = 0): void {
+  const library = openLibrary(libraryDir);
+  try {
+    library.db.exec("BEGIN");
+    try {
+      for (let i = 0; i < count; i += 1) {
+        const bytes = new Uint8Array(png.byteLength + 4);
+        bytes.set(png);
+        new DataView(bytes.buffer).setUint32(png.byteLength, i);
+        const added = addImage(library, {
+          bytes,
+          originalName: `img-${String(i).padStart(5, "0")}.png`,
+        });
+        if (!added.ok) throw new Error(`cannot seed image ${i}: ${added.code}`);
+        setThumbnail(library, added.image.id, png);
+        if (i < tagged) addTag(library, added.image.id, "ui");
+      }
+      library.db.exec("COMMIT");
+    } catch (error) {
+      library.db.exec("ROLLBACK");
+      throw error;
+    }
+  } finally {
+    closeLibrary(library);
+  }
 }
 
 function waitForReadyLine(child: ChildProcess): Promise<string> {

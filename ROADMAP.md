@@ -33,7 +33,11 @@ Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só 
 - A mesma biblioteca em vários computadores.
 - Escolher a pasta de destino do pacote.
 - Apagar uma imagem da biblioteca.
-- Detecção de imagens repetidas.
+- Pular imagens repetidas também ao adicionar pelo botão, colar ou soltar arquivos (na importação de pasta já são puladas).
+- O nome da pasta importada virar etiqueta das imagens dela.
+- Desfazer uma importação.
+- Acompanhar uma pasta e importar sozinho o que for colocado nela depois.
+- Outros formatos de imagem: GIF, HEIC, AVIF, SVG.
 - Limpeza técnica: conferir com zod o nome original do arquivo que chega junto com a imagem.
 - Rodar `pnpm start` com o refpack já aberto mostra só o aviso, sem a linha de erro do pnpm depois dele.
 - Avisos que somem sozinhos ou têm botão de fechar. Hoje eles se acumulam até recarregar a página.

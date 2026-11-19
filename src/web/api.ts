@@ -12,6 +12,7 @@ import {
   PackCreatedSchema,
   type Tag,
   TagSchema,
+  ThumbSavedSchema,
 } from "../shared/api.ts";
 
 // null when the answer arrived but is not the list this screen expects: the running refpack
@@ -236,5 +237,22 @@ export async function removeTag(imageId: string, tagId: string): Promise<boolean
     return response.ok;
   } catch {
     return false;
+  }
+}
+
+// The thumbnail's address as the server stored it. null on any status that is not 2xx, an answer
+// that is not ThumbSavedSchema, or a network error.
+export async function uploadThumbnail(imageId: string, thumb: Blob): Promise<string | null> {
+  try {
+    const response = await fetch(`/api/images/${encodeURIComponent(imageId)}/thumb`, {
+      method: "PUT",
+      headers: { "content-type": "application/octet-stream" },
+      body: thumb,
+    });
+    if (!response.ok) return null;
+    const parsed = ThumbSavedSchema.safeParse(await response.json());
+    return parsed.success ? parsed.data.thumbUrl : null;
+  } catch {
+    return null;
   }
 }

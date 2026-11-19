@@ -49,6 +49,11 @@ header label {
   user-select: none;
 }
 
+.image-grid > li {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 12rem;
+}
+
 .image-grid label {
   display: block;
   position: relative;

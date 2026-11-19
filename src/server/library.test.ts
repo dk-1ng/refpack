@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, expect, test } from "vitest";
@@ -13,8 +13,20 @@ import {
   openLibrary,
   resolveLibraryRoot,
   setNote,
+  setThumbnail,
+  thumbFileName,
 } from "./library.ts";
+import { listTags } from "./tags.ts";
 import { JPEG_BYTES, PNG_BYTES, tempLibraryRoot, WEBP_BYTES } from "./test-support.ts";
+
+const UNKNOWN = "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f";
+const other = (bytes: Uint8Array) => new Uint8Array([...bytes, 9]);
+
+function stored(library: Library, bytes: Uint8Array, name = "x.png") {
+  const result = addImage(library, { bytes, originalName: name });
+  if (!result.ok) throw new Error("setup failed");
+  return result.image;
+}
 
 const opened: Library[] = [];
 function open(root: string): Library {
@@ -118,6 +130,7 @@ test("CA-0.6 a library created before slice 2 opens with every image unselected"
       fileName: "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f.png",
       selected: false,
       note: "",
+      thumbMimeType: null,
     },
   ]);
   expect(getIntent(library)).toBe("");
@@ -154,6 +167,7 @@ test("CA-0.6 a library created before slice 3 opens with empty notes and keeps s
       fileName: "3f2b8a52-6c1e-4b0f-9a4d-1d2c3b4a5e6f.png",
       selected: true,
       note: "",
+      thumbMimeType: null,
     },
   ]);
   expect(getIntent(library)).toBe("antiga");
@@ -191,4 +205,133 @@ test("CA-3.8 clearing the selection keeps every note", () => {
   setSelected(library, a.id, true);
   setAllSelected(library, false);
   expect(findImage(library, a.id)?.note).toBe(NOTE);
+});
+
+test("CA-6.6 addImage with skipIdentical stores nothing when the same content is already there, under any name", () => {
+  const library = open(tempLibraryRoot());
+  stored(library, PNG_BYTES, "a.png");
+  expect(
+    addImage(library, { bytes: PNG_BYTES, originalName: "outro nome.png", skipIdentical: true }),
+  ).toEqual({ ok: false, code: "identical" });
+  expect(listImages(library)).toHaveLength(1);
+  expect(readdirSync(library.imagesDir)).toHaveLength(1);
+  const b = addImage(library, {
+    bytes: other(PNG_BYTES),
+    originalName: "b.png",
+    skipIdentical: true,
+  });
+  expect(b.ok).toBe(true);
+  expect(listImages(library)).toHaveLength(2);
+  const c = addImage(library, { bytes: JPEG_BYTES, originalName: "c.jpg", skipIdentical: true });
+  expect(c.ok).toBe(true);
+});
+
+test("CA-6.6 without skipIdentical the same content is stored again, as before", () => {
+  const library = open(tempLibraryRoot());
+  const a = stored(library, PNG_BYTES);
+  const b = stored(library, PNG_BYTES);
+  expect(a.id).not.toBe(b.id);
+  expect(listImages(library)).toHaveLength(2);
+});
+
+test("addImage checks size and type before looking for an identical image", () => {
+  const library = open(tempLibraryRoot());
+  stored(library, PNG_BYTES);
+  expect(
+    addImage(library, {
+      bytes: new TextEncoder().encode("not an image"),
+      originalName: "t.png",
+      skipIdentical: true,
+    }),
+  ).toEqual({ ok: false, code: "unsupported-type" });
+  expect(
+    addImage(library, {
+      bytes: new Uint8Array(MAX_IMAGE_BYTES + 1),
+      originalName: "big.png",
+      skipIdentical: true,
+    }),
+  ).toEqual({ ok: false, code: "too-large" });
+});
+
+test("CA-6.15 a library created before slice 6 gets the content hash of its images on open and keeps everything else", () => {
+  const root = tempLibraryRoot();
+  mkdirSync(join(root, "images"), { recursive: true });
+  const old = new DatabaseSync(join(root, "library.db"));
+  for (const name of [
+    "001-images.sql",
+    "002-image-selected.sql",
+    "003-pack-draft.sql",
+    "004-image-note.sql",
+    "005-marks.sql",
+    "006-tags.sql",
+  ]) {
+    old.exec(readFileSync(join(import.meta.dirname, "migrations", name), "utf8"));
+  }
+  old.exec("PRAGMA user_version = 6");
+  const MISSING = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+  const insert = old.prepare(
+    "INSERT INTO images (id, original_name, mime_type, selected, note) VALUES (?, ?, ?, ?, ?)",
+  );
+  insert.run(UNKNOWN, "antiga.png", "image/png", 1, "antiga");
+  insert.run(MISSING, "sem-arquivo.png", "image/png", 0, "");
+  writeFileSync(join(root, "images", `${UNKNOWN}.png`), PNG_BYTES);
+  const TAG = "0b7c1a2e-5d3f-4e8a-9c6b-2f1d0e9a8b7c";
+  old.prepare("INSERT INTO tags (id, name, key) VALUES (?, 'velha', 'velha')").run(TAG);
+  old.prepare("INSERT INTO image_tags (image_id, tag_id) VALUES (?, ?)").run(UNKNOWN, TAG);
+  old.exec("UPDATE pack_draft SET intent = 'velha'");
+  old.close();
+  const library = open(root);
+  const images = listImages(library);
+  expect(images).toHaveLength(2);
+  const kept = images.find((image) => image.id === UNKNOWN);
+  expect(kept).toMatchObject({ selected: true, note: "antiga", thumbMimeType: null });
+  expect(images.find((image) => image.id === MISSING)).toMatchObject({
+    selected: false,
+    thumbMimeType: null,
+  });
+  expect(listTags(library).get(UNKNOWN)).toMatchObject([{ id: TAG, name: "velha" }]);
+  expect(getIntent(library)).toBe("velha");
+  expect(
+    addImage(library, { bytes: PNG_BYTES, originalName: "x.png", skipIdentical: true }),
+  ).toEqual({ ok: false, code: "identical" });
+});
+
+test("CA-6.12 setThumbnail stores the thumbnail and replaces the previous one", () => {
+  const library = open(tempLibraryRoot());
+  const a = stored(library, PNG_BYTES);
+  expect(setThumbnail(library, a.id, WEBP_BYTES)).toEqual({ ok: true });
+  const found = findImage(library, a.id);
+  expect(found?.thumbMimeType).toBe("image/webp");
+  expect(readFileSync(join(library.thumbsDir, `${a.id}.webp`))).toEqual(Buffer.from(WEBP_BYTES));
+  if (found === null) throw new Error("missing");
+  expect(thumbFileName(found)).toBe(`${a.id}.webp`);
+  expect(setThumbnail(library, a.id, PNG_BYTES)).toEqual({ ok: true });
+  expect(readdirSync(library.thumbsDir)).toEqual([`${a.id}.png`]);
+  expect(readFileSync(join(library.imagesDir, a.fileName))).toEqual(Buffer.from(PNG_BYTES));
+});
+
+test("setThumbnail answers not-found and unsupported-type and then changes nothing", () => {
+  const library = open(tempLibraryRoot());
+  expect(setThumbnail(library, UNKNOWN, PNG_BYTES)).toEqual({ ok: false, code: "not-found" });
+  const a = stored(library, JPEG_BYTES, "a.jpg");
+  setThumbnail(library, a.id, PNG_BYTES);
+  expect(setThumbnail(library, a.id, new TextEncoder().encode("not an image"))).toEqual({
+    ok: false,
+    code: "unsupported-type",
+  });
+  expect(findImage(library, a.id)?.thumbMimeType).toBe("image/png");
+  expect(readdirSync(library.thumbsDir)).toEqual([`${a.id}.png`]);
+});
+
+test("CA-6.14 the thumbnail and the content hash are still there after reopening", () => {
+  const root = tempLibraryRoot();
+  const first = open(root);
+  const a = stored(first, PNG_BYTES);
+  setThumbnail(first, a.id, WEBP_BYTES);
+  closeLibrary(first);
+  const second = open(root);
+  expect(findImage(second, a.id)?.thumbMimeType).toBe("image/webp");
+  expect(
+    addImage(second, { bytes: PNG_BYTES, originalName: "x.png", skipIdentical: true }),
+  ).toEqual({ ok: false, code: "identical" });
 });

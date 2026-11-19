@@ -29,3 +29,5 @@ Regras:
 | [0017](0017-etiquetas.md) | Etiquetas em tabela própria, únicas sem distinguir maiúsculas, vivas enquanto alguma imagem as tem | Aceito |
 | [0018](0018-opus-no-lugar-do-fable.md) | Opus com esforço alto no lugar do Fable como arquiteto | Aceito |
 | [0019](0019-teste-de-uso-feito-por-agente.md) | O teste de uso é feito por um agente, e o dono aprova pelo relatório | Aceito |
+| [0020](0020-miniaturas-e-grade-com-milhares.md) | Miniaturas feitas pelo navegador; grade sem paginação que só carrega o que está perto da tela | Aceito |
+| [0021](0021-importacao-de-pasta.md) | Importação de pasta conduzida pela tela, uma imagem por vez; idênticas pela impressão digital do conteúdo | Aceito |

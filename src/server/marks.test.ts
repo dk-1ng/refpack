@@ -86,6 +86,7 @@ test("CA-0.6 CA-4.8 a library created before slice 4 opens with no marks and kee
       fileName: `${UNKNOWN}.png`,
       selected: true,
       note: "antiga",
+      thumbMimeType: null,
     },
   ]);
   expect(getIntent(library)).toBe("velha");

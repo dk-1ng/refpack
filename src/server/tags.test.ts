@@ -83,6 +83,7 @@ test("CA-5.10 a library created before slice 5 opens with no tags and keeps note
       fileName: `${UNKNOWN}.png`,
       selected: true,
       note: "antiga",
+      thumbMimeType: null,
     },
   ]);
   const marks = listMarks(library).get(UNKNOWN);
