@@ -18,7 +18,7 @@ Regras:
 | [0006](0006-testes-e-ci.md) | Um comando de verificação; CI em Linux, Windows e Mac | Aceito; "só com Chromium" superado pelo ADR-0010 |
 | [0007](0007-seguranca.md) | Servidor só local; ameaças de uma pessoa, um computador | Aceito |
 | [0008](0008-idiomas.md) | Tela em pt-BR e en por dicionários; docs em português, código em inglês | Aceito |
-| [0009](0009-papeis-dos-modelos-e-ciclo-da-fatia.md) | Papel de cada modelo, limites de correção e ciclo da fatia | Aceito |
+| [0009](0009-papeis-dos-modelos-e-ciclo-da-fatia.md) | Papel de cada modelo, limites de correção e ciclo da fatia | Aceito; papel do Fable superado pelo ADR-0018; teste manual do dono superado pelo ADR-0019 |
 | [0010](0010-testes-tambem-no-firefox.md) | Testes de ponta a ponta no Chromium e no Firefox | Aceito |
 | [0011](0011-pacote-em-montagem-no-banco.md) | A seleção e a intenção ficam no banco da biblioteca; a intenção sai em `INTENT.md` | Aceito |
 | [0012](0012-salvamento-automatico.md) | Salvamento automático: na hora, um de cada vez, e a tela só mostra o que foi confirmado | Aceito |
@@ -27,3 +27,5 @@ Regras:
 | [0015](0015-marcacoes.md) | Marcações em tabela própria; o recorte é feito pelo navegador na hora de marcar | Aceito |
 | [0016](0016-tempo-limite-dos-testes-unitarios.md) | Tempo limite de 20 segundos para cada teste unitário, igual em todos os sistemas | Aceito |
 | [0017](0017-etiquetas.md) | Etiquetas em tabela própria, únicas sem distinguir maiúsculas, vivas enquanto alguma imagem as tem | Aceito |
+| [0018](0018-opus-no-lugar-do-fable.md) | Opus com esforço alto no lugar do Fable como arquiteto | Aceito |
+| [0019](0019-teste-de-uso-feito-por-agente.md) | O teste de uso é feito por um agente, e o dono aprova pelo relatório | Aceito |

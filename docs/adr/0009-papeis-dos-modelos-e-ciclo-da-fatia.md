@@ -1,6 +1,6 @@
 # ADR-0009: Papéis dos modelos e ciclo da fatia
 
-- **Estado:** Aceito
+- **Estado:** Aceito; o papel do Fable superado pelo ADR-0018; o teste manual do dono superado pelo ADR-0019
 - **Data:** 2026-11-09
 
 ## Contexto

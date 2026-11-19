@@ -9,6 +9,9 @@ dist/
 test-results/
 playwright-report/
 
+# Scratch output of Claude Code's browser tool (usage test, ADR-0019)
+.playwright-mcp/
+
 # Secrets and local settings
 .env
 .env.*
