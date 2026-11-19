@@ -7,6 +7,7 @@ const img = (tags: Tag[]): Image => ({
   id: "00000000-0000-4000-8000-000000000000",
   originalName: "a.png",
   url: "/x",
+  thumbUrl: null,
   selected: false,
   note: "",
   marks: [],

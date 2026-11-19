@@ -6,12 +6,14 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import {
+  AddImageQuerySchema,
   AreaSchema,
   type ErrorCode,
   type Image,
   IntentSchema,
   MAX_CROP_BYTES,
   MAX_IMAGE_BYTES,
+  MAX_THUMB_BYTES,
   MarkCommentSchema,
   MarkKindBodySchema,
   MarkKindSchema,
@@ -30,6 +32,8 @@ import {
   listImages,
   type StoredImage,
   setNote,
+  setThumbnail,
+  thumbFileName,
 } from "./library.ts";
 import {
   addMark,
@@ -59,6 +63,7 @@ function toImage(image: StoredImage, marks: StoredMark[], tags: StoredTag[]): Im
     id: image.id,
     originalName: image.originalName,
     url: `/api/images/${image.id}/file`,
+    thumbUrl: image.thumbMimeType === null ? null : `/api/images/${image.id}/thumb`,
     selected: image.selected,
     note: image.note,
     marks: marks.map((mark) => ({
@@ -132,10 +137,17 @@ export function createApp(deps: AppDeps): Hono {
       onError: (c) => c.json(errorBody("too-large"), 413),
     }),
     async (c) => {
+      const query = AddImageQuerySchema.safeParse(c.req.query());
+      if (!query.success) return c.json(errorBody("invalid-request"), 400);
       const bytes = new Uint8Array(await c.req.arrayBuffer());
       const originalName = decodeName(c.req.header("x-original-name"));
-      const result = addImage(library, { bytes, originalName });
+      const result = addImage(library, {
+        bytes,
+        originalName,
+        skipIdentical: query.data.skipIdentical === "1",
+      });
       if (!result.ok) {
+        if (result.code === "identical") return c.json(errorBody("identical"), 409);
         return result.code === "too-large"
           ? c.json(errorBody("too-large"), 413)
           : c.json(errorBody("unsupported-type"), 415);
@@ -149,6 +161,35 @@ export function createApp(deps: AppDeps): Hono {
     if (image === null) return c.json(errorBody("not-found"), 404);
     const bytes = await readFile(join(library.imagesDir, image.fileName));
     return c.body(new Uint8Array(bytes), 200, { "content-type": image.mimeType });
+  });
+
+  app.put(
+    "/api/images/:id/thumb",
+    bodyLimit({
+      maxSize: MAX_THUMB_BYTES,
+      onError: (c) => c.json(errorBody("too-large"), 413),
+    }),
+    async (c) => {
+      const id = c.req.param("id");
+      const bytes = new Uint8Array(await c.req.arrayBuffer());
+      const result = setThumbnail(library, id, bytes);
+      if (!result.ok) {
+        return result.code === "not-found"
+          ? c.json(errorBody("not-found"), 404)
+          : c.json(errorBody("unsupported-type"), 415);
+      }
+      return c.json({ thumbUrl: `/api/images/${id}/thumb` }, 200);
+    },
+  );
+
+  app.get("/api/images/:id/thumb", async (c) => {
+    const image = findImage(library, c.req.param("id"));
+    const name = image === null ? null : thumbFileName(image);
+    if (image === null || name === null || image.thumbMimeType === null) {
+      return c.json(errorBody("not-found"), 404);
+    }
+    const bytes = await readFile(join(library.thumbsDir, name));
+    return c.body(new Uint8Array(bytes), 200, { "content-type": image.thumbMimeType });
   });
 
   app.put("/api/images/:id/selected", async (c) => {

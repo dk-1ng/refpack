@@ -6,6 +6,7 @@ export const MAX_NOTE_LENGTH = 10_000;
 export const MAX_COMMENT_LENGTH = 2_000;
 export const MAX_TAG_LENGTH = 60;
 export const MAX_CROP_BYTES = 100 * 1024 * 1024;
+export const MAX_THUMB_BYTES = 2 * 1024 * 1024;
 
 export const MarkKindSchema = z.enum(["like", "dislike"]);
 // The four edges of a mark, as fractions (0 to 1) of the image's width and height.
@@ -34,10 +35,17 @@ export const TagBodySchema = z.object({ name: z.string().trim().min(1).max(MAX_T
 // The body of PUT /api/draft/selection: every image, or only those with the tag.
 export const SelectionBodySchema = z.object({ selected: z.boolean(), tagId: z.uuid().optional() });
 
+// The query of POST /api/images. skipIdentical=1: an image whose content is already in the
+// library is not stored, and the answer is 409 "identical" (ADR-0021, item 6).
+export const AddImageQuerySchema = z.object({ skipIdentical: z.literal("1").optional() });
+// The answer of PUT /api/images/:id/thumb.
+export const ThumbSavedSchema = z.object({ thumbUrl: z.string() });
+
 export const ImageSchema = z.object({
   id: z.uuid(),
   originalName: z.string(),
   url: z.string(),
+  thumbUrl: z.string().nullable(),
   selected: z.boolean(),
   note: z.string(),
   marks: z.array(MarkSchema),
@@ -51,6 +59,7 @@ export const ErrorCodeSchema = z.enum([
   "forbidden",
   "not-found",
   "invalid-request",
+  "identical",
 ]);
 export const ErrorSchema = z.object({ error: z.object({ code: ErrorCodeSchema }) });
 export const SelectedBodySchema = z.object({ selected: z.boolean() });
