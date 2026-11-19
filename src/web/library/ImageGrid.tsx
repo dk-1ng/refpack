@@ -17,7 +17,7 @@ export function ImageGrid({
         <li key={image.id}>
           <label>
             <input type="checkbox" checked={image.selected} onChange={() => onToggle(image)} />
-            <img src={image.url} alt={image.originalName} draggable={false} />
+            <img src={image.thumbUrl ?? image.url} alt={image.originalName} draggable={false} />
           </label>
           <button type="button" className="note-button" onClick={() => onOpenNote(image)}>
             {t("note.open")}

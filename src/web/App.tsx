@@ -6,6 +6,7 @@ import { AddImages } from "./library/AddImages.tsx";
 import { ImageGrid } from "./library/ImageGrid.tsx";
 import { IncomingFiles } from "./library/IncomingFiles.tsx";
 import { SelectionBar } from "./library/SelectionBar.tsx";
+import { useThumbnails } from "./library/use-thumbnails.ts";
 import { ImageViewer } from "./note/ImageViewer.tsx";
 import { IntentBox } from "./pack/IntentBox.tsx";
 import { PackPanel } from "./pack/PackPanel.tsx";
@@ -102,6 +103,17 @@ export function App() {
       ),
     [],
   );
+
+  const thumbReady = useCallback(
+    (id: string, thumbUrl: string) =>
+      setImages((current) =>
+        current === null
+          ? current
+          : current.map((item) => (item.id === id ? { ...item, thumbUrl } : item)),
+      ),
+    [],
+  );
+  useThumbnails(images, thumbReady);
 
   const startOver = useCallback(async () => {
     if (!window.confirm(t("pack.confirmStartOver"))) return;

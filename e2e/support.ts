@@ -116,24 +116,30 @@ export async function makeImageFile(
   dir: string,
   name: string,
   mimeType: "image/png" | "image/jpeg" | "image/webp",
+  color = "#3366cc",
 ): Promise<string> {
-  const base64 = await page.evaluate(async (type) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 8;
-    canvas.height = 8;
-    const context = canvas.getContext("2d");
-    if (context === null) throw new Error("no 2d context");
-    context.fillStyle = "#3366cc";
-    context.fillRect(0, 0, 8, 8);
-    context.fillStyle = "#ffcc00";
-    context.fillRect(0, 0, 4, 4);
-    const blob = await new Promise<Blob | null>((resolveBlob) => canvas.toBlob(resolveBlob, type));
-    if (blob === null) throw new Error(`cannot export ${type}`);
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    let binary = "";
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    return btoa(binary);
-  }, mimeType);
+  const base64 = await page.evaluate(
+    async ({ type, color }) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 8;
+      canvas.height = 8;
+      const context = canvas.getContext("2d");
+      if (context === null) throw new Error("no 2d context");
+      context.fillStyle = color;
+      context.fillRect(0, 0, 8, 8);
+      context.fillStyle = "#ffcc00";
+      context.fillRect(0, 0, 4, 4);
+      const blob = await new Promise<Blob | null>((resolveBlob) =>
+        canvas.toBlob(resolveBlob, type),
+      );
+      if (blob === null) throw new Error(`cannot export ${type}`);
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = "";
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      return btoa(binary);
+    },
+    { type: mimeType, color },
+  );
   await mkdir(dir, { recursive: true });
   const path = join(dir, name);
   await writeFile(path, Buffer.from(base64, "base64"));
