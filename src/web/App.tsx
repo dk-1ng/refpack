@@ -104,6 +104,8 @@ export function App() {
     [],
   );
 
+  const openNote = useCallback((image: Image) => setOpenId(image.id), []);
+
   const thumbReady = useCallback(
     (id: string, thumbUrl: string) =>
       setImages((current) =>
@@ -223,7 +225,7 @@ export function App() {
             onSelectAll={() => selectAll(true)}
             onClear={() => selectAll(false)}
           />
-          <ImageGrid images={shown} onToggle={toggle} onOpenNote={(image) => setOpenId(image.id)} />
+          <ImageGrid images={shown} onToggle={toggle} onOpenNote={openNote} />
         </>
       ) : null}
       {openImage !== null ? (
