@@ -1,6 +1,6 @@
 # Workflow — como uma fatia é construída
 
-Este arquivo é para a **sessão principal** (quem conduz a fatia). Os agentes que ela chama recebem só a tarefa deles e o `CLAUDE.md`. A justificativa das escolhas está no [ADR-0009](adr/0009-papeis-dos-modelos-e-ciclo-da-fatia.md).
+Este arquivo é para a **sessão principal** (quem conduz a fatia). Os agentes que ela chama recebem só a tarefa deles e o `CLAUDE.md`. A justificativa das escolhas está no [ADR-0009](adr/0009-papeis-dos-modelos-e-ciclo-da-fatia.md), no [ADR-0018](adr/0018-opus-no-lugar-do-fable.md) (Opus no lugar do Fable) e no [ADR-0019](adr/0019-teste-de-uso-feito-por-agente.md) (teste de uso feito por agente).
 
 O ciclo usa as skills do plugin superpowers. Onde este arquivo e uma skill discordam, **este arquivo vence** (ver "Ajustes sobre o superpowers").
 
@@ -8,22 +8,23 @@ O ciclo usa as skills do plugin superpowers. Onde este arquivo e uma skill disco
 
 | Modelo | Papel | Faz | Não faz |
 | --- | --- | --- | --- |
-| **Fable** | Arquiteto | Entrevista da próxima fatia, critérios de aceite no SPEC, ADRs, plano da fatia; decide quando alguém "para e reporta"; analisa a especificação quando as correções se repetem. | Implementar tarefas; conduzir a execução do dia a dia. |
-| **Opus** | Condutor e revisor | Conduz a sessão de execução (chama os agentes, lê os relatórios, monta as revisões). Faz a revisão final da fatia, em contexto limpo. Implementa as tarefas marcadas "difícil" no plano e assume uma tarefa em que o Sonnet travou. | Mudar design, SPEC ou plano. |
-| **Sonnet** | Executor padrão | Implementa uma tarefa por vez em TDD, em contexto novo. Faz a revisão de cada tarefa e a reverificação de correções pequenas. | Decidir qualquer coisa que o plano não decidiu. |
+| **Opus, sessão de planejamento** | Arquiteto | Entrevista da próxima fatia, critérios de aceite no SPEC, ADRs, plano da fatia; decide quando alguém "para e reporta"; analisa a especificação quando as correções se repetem. | Implementar tarefas; conduzir a execução do dia a dia. |
+| **Opus, sessão de execução** | Condutor e revisor | Conduz a sessão de execução (chama os agentes, lê os relatórios, monta as revisões). Faz a revisão final da fatia, em contexto limpo. Implementa as tarefas marcadas "difícil" no plano e assume uma tarefa em que o Sonnet travou. | Mudar design, SPEC ou plano. |
+| **Sonnet** | Executor padrão | Implementa uma tarefa por vez em TDD, em contexto novo. Faz a revisão de cada tarefa e a reverificação de correções pequenas. Faz o teste de uso da fatia. | Decidir qualquer coisa que o plano não decidiu. |
 | **Haiku** | Mecânico | Tarefas em que o plano já traz o conteúdo exato (configuração, dicionários de texto), correções de um arquivo só, resumo de logs do CI. | Revisar; implementar a partir de descrição em prosa. |
 
 ## Nível de esforço
 
 | Atividade | Modelo | Esforço |
 | --- | --- | --- |
-| Planejar a fatia, SPEC, ADRs | Fable | `high` |
-| Analisar uma "volta à especificação" | Fable | `high` |
+| Planejar a fatia, SPEC, ADRs | Opus | `high` |
+| Analisar uma "volta à especificação" | Opus | `high` |
 | Conduzir a execução | Opus | `medium` |
 | Revisão final da fatia | Opus | `high` |
 | Tarefa difícil ou tarefa travada | Opus | `high` |
 | Implementar uma tarefa | Sonnet | `medium` |
 | Revisão por tarefa e reverificação | Sonnet | `medium` |
+| Teste de uso da fatia | Sonnet | `medium` |
 | Trabalho mecânico, resumo de log | Haiku | `low` |
 
 Regra geral: o modelo e o esforço menos caros que dão conta do papel.
@@ -31,19 +32,19 @@ Regra geral: o modelo e o esforço menos caros que dão conta do papel.
 - **Todo agente é chamado com modelo e esforço escritos explicitamente**, conforme a tabela; sem isso ele herda os da sessão, que costumam ser os mais caros.
 - **`xhigh` e `max` só por decisão do dono**, para um caso específico.
 
-Para o dono: sessões de **planejamento** rodam com `/model fable` e `/effort high`; sessões de **execução** com `/model opus` e `/effort medium`. Cada uma começa do zero (`/clear`).
+Para o dono: sessões de **planejamento** rodam com `/model opus` e `/effort high`; sessões de **execução** com `/model opus` e `/effort medium`. Cada uma começa do zero (`/clear`).
 
 ## O ciclo
 
-### 1. Planejar — sessão em Fable
+### 1. Planejar — sessão em Opus, esforço `high`
 
 1. Mini-entrevista com o dono sobre a próxima fatia, em um bloco de até 5 perguntas.
 2. Escrever os critérios de aceite da fatia no `SPEC.md`. O dono aprova.
 3. Se a fatia pede decisão técnica nova, escrever o ADR.
-4. Escrever `docs/slices/NN-nome/plan.md` com a skill `superpowers:writing-plans`: no máximo **6 tarefas**, cada uma do tamanho de uma sessão, cada uma ligada aos critérios de aceite que cobre, e com um **roteiro de teste manual** para o dono no final. Se não couber em 6, a fatia está grande: cortar e mandar o resto para "Depois".
-5. O dono aprova o plano. A aprovação autoriza criar o branch `slice/NN-nome`, enviá-lo ao GitHub e abrir um pull request em rascunho. Não autoriza o merge.
+4. Escrever `docs/slices/NN-nome/plan.md` com a skill `superpowers:writing-plans`: no máximo **6 tarefas**, cada uma do tamanho de uma sessão, cada uma ligada aos critérios de aceite que cobre, e com um **roteiro de teste de uso** no final (passos numerados: o que fazer, o resultado esperado e os critérios que confere; os passos que acontecem fora da página marcados "fora do alcance do agente"). Se não couber em 6, a fatia está grande: cortar e mandar o resto para "Depois".
+5. O dono aprova o plano e decide se confere pessoalmente algum passo "fora do alcance do agente". A aprovação autoriza criar o branch `slice/NN-nome`, enviá-lo ao GitHub e abrir um pull request em rascunho. Não autoriza o merge.
 
-### 2. Implementar com testes — sessão em Opus
+### 2. Implementar com testes — sessão em Opus, esforço `medium`
 
 Skill: `superpowers:subagent-driven-development`, com `superpowers:test-driven-development`.
 
@@ -69,21 +70,48 @@ Os bloqueios são corrigidos (teste primeiro) e o revisor confere **uma vez** s�
 
 A lista "Fora do SPEC" vai para o dono, que decide item a item: vira critério de aceite, vai para "Depois" ou é descartado.
 
-### 5. Teste manual do dono
+### 5. Teste de uso — agente
 
-O condutor deixa o app pronto para uso no branch da fatia e entrega ao dono, em português simples:
+Com a revisão aprovada e o CI verde, o condutor chama um agente novo (Sonnet, `medium`) com o texto abaixo, completando o que está entre `<>`:
+
+> Você vai testar o refpack como um usuário, seguindo um roteiro. Não altere nenhum arquivo do repositório, não faça commit e não corrija nada: só teste e relate.
+>
+> Roteiro: a seção "Roteiro de teste de uso" de `docs/slices/<NN-nome>/plan.md`.
+>
+> Preparação:
+> 1. Crie uma pasta temporária fora do repositório, com acentos e espaços no nome. Dentro dela, uma pasta para a biblioteca e uma para o relatório e as fotos. Gere na hora as imagens de que o roteiro precisar; nunca use imagens de terceiros nem a biblioteca do dono (`~/refpack-library`).
+> 2. No `main` (versão anterior), rode `pnpm start` em segundo plano com `REFPACK_LIBRARY=<pasta da biblioteca>`, `REFPACK_PORT=<porta livre>` e `REFPACK_NO_OPEN=1`. Use a ferramenta de navegador para deixar a biblioteca como o roteiro pede no começo. Pare o app.
+> 3. Volte ao branch `<slice/NN-nome>` e rode o app do mesmo jeito.
+>
+> Execução: faça cada passo pela ferramenta de navegador, tire uma foto da tela ao fim de cada um e compare com o esperado. Nos passos marcados "fora do alcance do agente", faça o equivalente mais próximo dentro da página e diga que foi o equivalente. Quando o roteiro pedir que o Claude Code leia o pacote, leia você mesmo a pasta gerada e escreva o que entendeu dela antes de comparar com o esperado. Ao terminar, pare o app e feche o navegador.
+>
+> Relatório, salvo em `<pasta do relatório>/relatorio.md` e repetido na sua resposta:
+> - Primeira linha: `APROVADO` ou `DEFEITOS`.
+> - Uma linha por passo: número, `ok` / `falhou` / `equivalente`, o que aconteceu (se diferente do esperado) e o caminho da foto.
+> - Para cada falha: o critério de aceite e como reproduzir.
+>
+> Se não conseguir operar um passo com a ferramenta, marque-o como `não testado`, diga por quê e siga para o próximo.
+
+**Defeito encontrado:** corrige-se com teste primeiro, como qualquer defeito; depois, o agente do teste de uso (novo) refaz só os passos que falharam. No máximo **2 rodadas de correção**; se o defeito continuar, volta à especificação. Um passo `não testado` por limite da ferramenta é refeito uma vez por um agente Opus novo (`high`); se continuar, vai ao dono como `não testado`.
+
+O relatório e as fotos nunca entram no repositório.
+
+### 6. Entrega ao dono
+
+O condutor entrega ao dono, em português simples:
 
 - o que foi construído;
 - a prova (saída de `pnpm check`, link do CI, veredito da revisão);
-- o roteiro de teste manual do plano;
+- o relatório do teste de uso, com o caminho completo da pasta das fotos, e as rodadas de correção que ele gerou;
+- os passos que ficaram só no equivalente ou `não testado`;
 - a lista "Fora do SPEC".
 
-O dono responde "aprovado" ou descreve o problema.
+O dono lê e responde "aprovado" ou descreve o problema.
 
-- **Não faz o que o critério diz:** é defeito. Corrige-se com teste primeiro.
-- **Faz o que o critério diz, mas o dono quer diferente:** é mudança de SPEC. Nada é codificado agora; vira ajuste do SPEC para uma próxima fatia ou item de "Depois".
+- **Não faz o que o critério diz:** é defeito. Corrige-se com teste primeiro, e o agente do teste de uso confere de novo.
+- **Faz o que o critério diz, mas o dono quer diferente:** é mudança de SPEC. Nada é codificado agora; vira ajuste do SPEC para uma próxima fatia ou item de "Depois". Vale também para o que o dono descobrir usando o app depois do merge.
 
-### 6. Merge
+### 7. Merge
 
 Só depois do "aprovado" do dono **para esta fatia**: marcar a fatia como feita no `ROADMAP.md`, fazer o merge do pull request em um commit só (squash) e apagar o branch (`superpowers:finishing-a-development-branch`, opção de pull request).
 
@@ -95,8 +123,9 @@ Só depois do "aprovado" do dono **para esta fatia**: marcar a fatia como feita 
 | Sonnet não resolve a mesma falha em 1 rodada de correção | Um agente Opus novo assume, com `superpowers:systematic-debugging`. |
 | 2 rodadas de correção na mesma tarefa sem resolver | **Volta à especificação.** |
 | Revisão da fatia ainda bloqueia depois da reverificação | **Volta à especificação.** |
-| O teste manual do dono falha duas vezes no mesmo ponto | **Volta à especificação.** |
-| Executor precisa mudar design, dependência, schema ou estrutura | Para e reporta. O arquiteto (Fable) decide por ADR. |
+| O teste de uso ainda falha depois de 2 rodadas de correção | **Volta à especificação.** |
+| O dono aponta duas vezes o mesmo defeito na entrega | **Volta à especificação.** |
+| Executor precisa mudar design, dependência, schema ou estrutura | Para e reporta. O arquiteto (sessão de planejamento, Opus `high`) decide por ADR. |
 | Critério de aceite ambíguo ou contraditório | Para e reporta. O arquiteto esclarece no SPEC; se muda o que o produto faz, o dono decide. |
 | Um teste só passa com tratamento especial por sistema operacional | Para e reporta. O arquiteto simplifica o design (R11). |
 | A fatia não vai caber em 2 dias ou em 6 tarefas | Para. O dono decide o que sai e vai para "Depois". O prazo não estica. |
@@ -111,5 +140,5 @@ Só depois do "aprovado" do dono **para esta fatia**: marcar a fatia como feita 
 3. **No máximo 2 rodadas de correção por tarefa** (a skill permite 5), e uma só reverificação na revisão da fatia.
 4. **O revisor não trata o silêncio do SPEC como defeito.** O que o SPEC não cobre vai para a lista "Fora do SPEC" e não bloqueia (R4, R5).
 5. **"Review Focus" do plano:** só entram condições que o dono pode causar em uso normal. Cada uma vira critério de aceite aprovado por ele antes do código, ou sai.
-6. **A revisão final vem depois do CI verde**, e o merge só depois do teste manual do dono.
+6. **A revisão final vem depois do CI verde**, o teste de uso depois da revisão, e o merge só depois da aprovação do dono.
 7. **Fechamento sempre por pull request**; nunca merge local direto em `main`.

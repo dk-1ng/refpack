@@ -79,7 +79,7 @@ Vale para toda tarefa, sem exceção. Uma tarefa só está pronta quando **todos
 Para fechar uma **fatia**, além disso:
 
 9. A revisão da fatia inteira, em contexto limpo e contra o `SPEC.md`, terminou aprovada.
-10. O dono fez o teste manual e aprovou.
+10. O teste de uso, feito por um agente (ADR-0019), terminou aprovado, e o dono leu o relatório e aprovou.
 
 **Nunca diga que algo está pronto sem os testes passando.** Mostre a saída do comando. Se um teste falhou ou um passo foi pulado, diga isso.
 
@@ -89,8 +89,9 @@ Para fechar uma **fatia**, além disso:
 2. **Implementar com testes:** um agente novo por tarefa, em TDD.
 3. **CI:** verde nos três sistemas.
 4. **Revisão com contexto limpo contra o SPEC:** bloqueante, com lista de correções.
-5. **Teste manual do dono.**
-6. **Merge.**
+5. **Teste de uso:** um agente segue o roteiro do plano no navegador e relata, com fotos.
+6. **Aprovação do dono** pelo relatório.
+7. **Merge.**
 
 A sessão principal segue `docs/WORKFLOW.md`, que traz o papel de cada modelo, quando escalar e os ajustes sobre o superpowers (ADR-0009). Um agente chamado para uma tarefa não precisa lê-lo: faz a tarefa recebida e, diante de qualquer dúvida de design, para e reporta.
 
