@@ -51,3 +51,7 @@ Ideias aprovadas como parte da visão, sem fatia marcada. Entram no roteiro só 
 - Filtrar por mais de uma etiqueta, ou por "sem etiqueta"; lembrar o filtro ao reabrir o refpack.
 - Escolher uma sugestão de etiqueta pelas setas do teclado.
 - Buscar imagens por texto da nota, do comentário ou da etiqueta.
+- Na imagem aberta, a seção de etiquetas com o título "Etiquetas" visível e a palavra "Remover" no lugar do "×".
+- Um clique duplo rápido no "×" de uma etiqueta não mostra por engano o aviso "Não foi possível salvar".
+- O "×" de tirar etiqueta passa pelos dicionários de texto, como o resto da tela.
+- Os testes automáticos no Windows às vezes falham por lentidão e passam na segunda tentativa: investigar a causa.
